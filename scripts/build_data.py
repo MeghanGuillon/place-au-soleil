@@ -11,8 +11,8 @@ import os
 import re
 import shutil
 import zipfile
-from collections import Counter
-from datetime import datetime, timezone
+from collections import Counter, defaultdict
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import requests
@@ -21,6 +21,7 @@ GTFS_URL = "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_G
 ROOT = os.path.join(os.path.dirname(__file__), "..", "data")
 DATES_DIR = os.path.join(ROOT, "dates")
 DATE_RE = re.compile(r"(20\d{6})(?!.*20\d{6})")
+DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
 def download_gtfs():
@@ -31,18 +32,70 @@ def download_gtfs():
     return zipfile.ZipFile(io.BytesIO(r.content))
 
 
+def gtfs_date(value):
+    try:
+        return datetime.strptime(str(value), "%Y%m%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
 def extract_date(*values):
+    """Secours pour les flux SNCF qui encodent directement la date dans un identifiant."""
     for value in values:
         if value is None or pd.isna(value):
             continue
         m = DATE_RE.search(str(value))
         if m:
-            raw = m.group(1)
-            try:
-                return datetime.strptime(raw, "%Y%m%d").strftime("%Y-%m-%d")
-            except ValueError:
-                pass
+            d = gtfs_date(m.group(1))
+            if d:
+                return d.isoformat()
     return None
+
+
+def build_service_dates(zf):
+    """Construit service_id -> dates selon calendar.txt + calendar_dates.txt."""
+    service_dates = defaultdict(set)
+    names = set(zf.namelist())
+    used = []
+
+    if "calendar.txt" in names:
+        with zf.open("calendar.txt") as f:
+            calendar = pd.read_csv(f, dtype=str)
+        for row in calendar.itertuples(index=False):
+            d = row._asdict()
+            service_id = str(d.get("service_id", ""))
+            start = gtfs_date(d.get("start_date"))
+            end = gtfs_date(d.get("end_date"))
+            if not service_id or not start or not end:
+                continue
+            current = start
+            while current <= end:
+                day_key = DAYS[current.weekday()]
+                if str(d.get(day_key, "0")) == "1":
+                    service_dates[service_id].add(current.isoformat())
+                current += timedelta(days=1)
+        used.append("calendar.txt")
+
+    if "calendar_dates.txt" in names:
+        with zf.open("calendar_dates.txt") as f:
+            exceptions = pd.read_csv(f, dtype=str)
+        for row in exceptions.itertuples(index=False):
+            d = row._asdict()
+            service_id = str(d.get("service_id", ""))
+            date = gtfs_date(d.get("date"))
+            exception = str(d.get("exception_type", ""))
+            if not service_id or not date:
+                continue
+            iso = date.isoformat()
+            if exception == "1":
+                service_dates[service_id].add(iso)
+            elif exception == "2":
+                service_dates[service_id].discard(iso)
+        used.append("calendar_dates.txt")
+
+    print("Calendrier GTFS : " + (" + ".join(used) if used else "absent, secours par identifiants"))
+    print(f"Services calendaires : {len(service_dates)}")
+    return service_dates, used
 
 
 def canonical_stations(stops):
@@ -89,6 +142,14 @@ def train_kind(trip_id):
     return "Train"
 
 
+def train_number(raw, trip_id):
+    value = str(raw or "").strip()
+    if value and value.lower() != "nan":
+        return value
+    m = re.match(r"OCESN(\d+)", str(trip_id), re.IGNORECASE)
+    return m.group(1) if m else ""
+
+
 def main():
     zf = download_gtfs()
     with zf.open("stops.txt") as f:
@@ -96,24 +157,34 @@ def main():
     with zf.open("trips.txt") as f:
         trips = pd.read_csv(f, dtype=str)
 
+    service_dates, calendar_sources = build_service_dates(zf)
+
     stations, stop_to_station = canonical_stations(stops)
     station_ids = {s["id"] for s in stations}
     print(f"Gares canoniques : {len(stations)}")
 
     meta = {}
     has_short = "trip_short_name" in trips.columns
+    fallback_count = 0
     for row in trips.itertuples(index=False):
         d = row._asdict()
         trip_id = str(d.get("trip_id", ""))
-        date = extract_date(trip_id, d.get("service_id"))
-        if not date:
+        service_id = str(d.get("service_id", ""))
+        dates = sorted(service_dates.get(service_id, set()))
+        if not dates:
+            fallback = extract_date(trip_id, service_id)
+            if fallback:
+                dates = [fallback]
+                fallback_count += 1
+        if not dates:
             continue
         meta[trip_id] = {
-            "date": date,
-            "number": str(d.get("trip_short_name", "") or "") if has_short else "",
+            "dates": dates,
+            "number": train_number(d.get("trip_short_name", "") if has_short else "", trip_id),
             "kind": train_kind(trip_id),
         }
-    print(f"Trips datés : {len(meta)}")
+    print(f"Trips avec dates de circulation : {len(meta)}")
+    print(f"Trips utilisant le secours par identifiant : {fallback_count}")
 
     wanted = set(meta)
     cols = ["trip_id", "stop_id", "stop_sequence", "arrival_time", "departure_time"]
@@ -132,7 +203,8 @@ def main():
     times = times.dropna(subset=["stop_sequence"]).sort_values(["trip_id", "stop_sequence"])
 
     by_date = {}
-    kept = 0
+    kept_trips = 0
+    circulations = 0
     for trip_id, group in times.groupby("trip_id", sort=False):
         info = meta.get(str(trip_id))
         if not info:
@@ -159,10 +231,13 @@ def main():
             "k": info["kind"],
             "s": stops_out,
         }
-        by_date.setdefault(info["date"], []).append(obj)
-        kept += 1
+        for date in info["dates"]:
+            by_date.setdefault(date, []).append(obj)
+            circulations += 1
+        kept_trips += 1
 
-    print(f"Trips conservés : {kept}")
+    print(f"Trips conservés : {kept_trips}")
+    print(f"Circulations datées générées : {circulations}")
     os.makedirs(ROOT, exist_ok=True)
     if os.path.isdir(DATES_DIR):
         shutil.rmtree(DATES_DIR)
@@ -181,6 +256,7 @@ def main():
     manifest = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source": "SNCF Open Data — Licence Ouverte Etalab 2.0",
+        "calendar_sources": calendar_sources,
         "dates": manifest_dates,
     }
     with open(os.path.join(ROOT, "manifest.json"), "w", encoding="utf-8") as f:
