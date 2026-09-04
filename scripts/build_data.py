@@ -267,6 +267,83 @@ def sun_side(train_bearing: float, sun_azimuth: float) -> str:
     # Soleil sur la gauche
     return "left"
 
+def build_segments(shape_points: list[dict]) -> list[dict]:
+    """
+    Transforme une liste de points GPS ordonnés en tronçons.
+
+    Chaque tronçon contient :
+      - point de départ
+      - point d'arrivée
+      - cap du train
+      - point milieu
+    """
+    segments = []
+
+    for i in range(len(shape_points) - 1):
+        start = shape_points[i]
+        end = shape_points[i + 1]
+
+        lat1 = float(start["shape_pt_lat"])
+        lon1 = float(start["shape_pt_lon"])
+        lat2 = float(end["shape_pt_lat"])
+        lon2 = float(end["shape_pt_lon"])
+
+        train_bearing = bearing(
+            lat1,
+            lon1,
+            lat2,
+            lon2,
+        )
+
+        mid_lat = (lat1 + lat2) / 2
+        mid_lon = (lon1 + lon2) / 2
+
+        segments.append(
+            {
+                "start": {
+                    "lat": lat1,
+                    "lon": lon1,
+                },
+                "end": {
+                    "lat": lat2,
+                    "lon": lon2,
+                },
+                "midpoint": {
+                    "lat": mid_lat,
+                    "lon": mid_lon,
+                },
+                "bearing": train_bearing,
+            }
+        )
+
+    return segments
+
+def get_shape_points(shapes_df, shape_id: str) -> list[dict]:
+    """
+    Récupère les points GPS d'un shape GTFS dans le bon ordre.
+    """
+    shape = shapes_df[
+        shapes_df["shape_id"].astype(str) == str(shape_id)
+    ].copy()
+
+    if shape.empty:
+        return []
+
+    shape["shape_pt_sequence"] = (
+        shape["shape_pt_sequence"]
+        .astype(int)
+    )
+
+    shape = shape.sort_values("shape_pt_sequence")
+
+    return shape[
+        [
+            "shape_pt_lat",
+            "shape_pt_lon",
+            "shape_pt_sequence",
+        ]
+    ].to_dict("records")
+
 def download_gtfs() -> zipfile.ZipFile:
     print("Téléchargement du GTFS SNCF…")
     r = requests.get(GTFS_URL, timeout=120)
