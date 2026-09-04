@@ -403,4 +403,37 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Test temporaire : Paris, 4 septembre 2026 à 10h UTC
+    test_dt = datetime(
+        2026,
+        9,
+        4,
+        10,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    azimuth, elevation = solar_position(
+        48.8566,
+        2.3522,
+        test_dt,
+    )
+
+    print("TEST SOLAIRE")
+    print("Azimut :", round(azimuth, 1))
+    print("Élévation :", round(elevation, 1))
+
+    test_bearing = bearing(
+        48.8566,
+        2.3522,
+        48.6900,
+        2.3700,
+    )
+
+    print("Cap du train :", round(test_bearing, 1))
+    print(
+        "Côté du soleil :",
+        sun_side(test_bearing, azimuth),
+    )
+
+    # main()
