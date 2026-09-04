@@ -40,6 +40,232 @@ def normalize(text: str) -> str:
     text = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
     return text
 
+def solar_position(lat: float, lon: float, dt: datetime) -> tuple[float, float]:
+    """
+    Calcule la position du soleil pour une latitude, longitude et date/heure UTC.
+
+    Retourne :
+      - azimut en degrés : 0° = nord, 90° = est, 180° = sud, 270° = ouest
+      - élévation en degrés : > 0 = soleil au-dessus de l'horizon
+
+    Calcul basé sur les équations solaires NOAA.
+    """
+    if dt.tzinfo is None:
+        raise ValueError("La date doit avoir un timezone.")
+
+    dt_utc = dt.astimezone(timezone.utc)
+
+    # Jour julien
+    year = dt_utc.year
+    month = dt_utc.month
+    day = dt_utc.day
+
+    hour = (
+        dt_utc.hour
+        + dt_utc.minute / 60
+        + dt_utc.second / 3600
+        + dt_utc.microsecond / 3_600_000_000
+    )
+
+    if month <= 2:
+        year -= 1
+        month += 12
+
+    a = math.floor(year / 100)
+    b = 2 - a + math.floor(a / 4)
+
+    jd = (
+        math.floor(365.25 * (year + 4716))
+        + math.floor(30.6001 * (month + 1))
+        + day
+        + b
+        - 1524.5
+        + hour / 24
+    )
+
+    t = (jd - 2451545.0) / 36525.0
+
+    # Longitude géométrique moyenne du Soleil
+    geom_mean_long_sun = (
+        280.46646
+        + t * (36000.76983 + t * 0.0003032)
+    ) % 360
+
+    # Anomalie moyenne
+    geom_mean_anom_sun = (
+        357.52911
+        + t * (35999.05029 - 0.0001537 * t)
+    )
+
+    eccent_earth_orbit = (
+        0.016708634
+        - t * (0.000042037 + 0.0000001267 * t)
+    )
+
+    m_rad = math.radians(geom_mean_anom_sun)
+
+    sun_eq_of_center = (
+        math.sin(m_rad)
+        * (1.914602 - t * (0.004817 + 0.000014 * t))
+        + math.sin(2 * m_rad)
+        * (0.019993 - 0.000101 * t)
+        + math.sin(3 * m_rad) * 0.000289
+    )
+
+    sun_true_long = geom_mean_long_sun + sun_eq_of_center
+
+    omega = 125.04 - 1934.136 * t
+
+    sun_app_long = (
+        sun_true_long
+        - 0.00569
+        - 0.00478 * math.sin(math.radians(omega))
+    )
+
+    mean_obliq_ecliptic = (
+        23
+        + (
+            26
+            + (
+                21.448
+                - t * (
+                    46.815
+                    + t * (0.00059 - t * 0.001813)
+                )
+            ) / 60
+        ) / 60
+    )
+
+    obliq_corr = (
+        mean_obliq_ecliptic
+        + 0.00256 * math.cos(math.radians(omega))
+    )
+
+    declination = math.degrees(
+        math.asin(
+            math.sin(math.radians(obliq_corr))
+            * math.sin(math.radians(sun_app_long))
+        )
+    )
+
+    y = math.tan(math.radians(obliq_corr / 2)) ** 2
+
+    equation_of_time = 4 * math.degrees(
+        y * math.sin(2 * math.radians(geom_mean_long_sun))
+        - 2 * eccent_earth_orbit * math.sin(m_rad)
+        + 4
+        * eccent_earth_orbit
+        * y
+        * math.sin(m_rad)
+        * math.cos(2 * math.radians(geom_mean_long_sun))
+        - 0.5
+        * y**2
+        * math.sin(4 * math.radians(geom_mean_long_sun))
+        - 1.25
+        * eccent_earth_orbit**2
+        * math.sin(2 * m_rad)
+    )
+
+    minutes_utc = (
+        dt_utc.hour * 60
+        + dt_utc.minute
+        + dt_utc.second / 60
+    )
+
+    true_solar_time = (
+        minutes_utc
+        + equation_of_time
+        + 4 * lon
+    ) % 1440
+
+    hour_angle = true_solar_time / 4 - 180
+
+    lat_rad = math.radians(lat)
+    decl_rad = math.radians(declination)
+    ha_rad = math.radians(hour_angle)
+
+    cos_zenith = (
+        math.sin(lat_rad) * math.sin(decl_rad)
+        + math.cos(lat_rad)
+        * math.cos(decl_rad)
+        * math.cos(ha_rad)
+    )
+
+    cos_zenith = max(-1.0, min(1.0, cos_zenith))
+
+    zenith = math.degrees(math.acos(cos_zenith))
+    elevation = 90 - zenith
+
+    azimuth = math.degrees(
+        math.atan2(
+            math.sin(ha_rad),
+            math.cos(ha_rad) * math.sin(lat_rad)
+            - math.tan(decl_rad) * math.cos(lat_rad),
+        )
+    )
+
+    azimuth = (azimuth + 180) % 360
+
+    return azimuth, elevation
+
+
+def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Calcule le cap entre deux points géographiques.
+
+    Retour :
+      0° = nord
+      90° = est
+      180° = sud
+      270° = ouest
+    """
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+
+    delta_lon = math.radians(lon2 - lon1)
+
+    x = math.sin(delta_lon) * math.cos(lat2_rad)
+
+    y = (
+        math.cos(lat1_rad) * math.sin(lat2_rad)
+        - math.sin(lat1_rad)
+        * math.cos(lat2_rad)
+        * math.cos(delta_lon)
+    )
+
+    angle = math.degrees(math.atan2(x, y))
+
+    return (angle + 360) % 360
+
+
+def sun_side(train_bearing: float, sun_azimuth: float) -> str:
+    """
+    Détermine de quel côté du train se trouve le soleil.
+
+    Retour :
+      "left"
+      "right"
+      "front"
+      "back"
+    """
+    relative_angle = (
+        sun_azimuth - train_bearing + 360
+    ) % 360
+
+    # Soleil plutôt en face
+    if relative_angle <= 45 or relative_angle >= 315:
+        return "front"
+
+    # Soleil sur la droite
+    if 45 < relative_angle < 135:
+        return "right"
+
+    # Soleil plutôt derrière
+    if 135 <= relative_angle <= 225:
+        return "back"
+
+    # Soleil sur la gauche
+    return "left"
 
 def download_gtfs() -> zipfile.ZipFile:
     print("Téléchargement du GTFS SNCF…")
