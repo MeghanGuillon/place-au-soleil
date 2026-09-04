@@ -177,8 +177,13 @@ def main():
         stops = pd.read_csv(f, dtype=str)
     with zf.open("trips.txt") as f:
         trips = pd.read_csv(f, dtype=str)
-    with zf.open("calendar.txt") as f:
-        calendar = pd.read_csv(f, dtype=str)
+
+    if "calendar.txt" in zf.namelist():
+        with zf.open("calendar.txt") as f:
+            calendar = pd.read_csv(f, dtype=str)
+    else:
+        print("  calendar.txt absent : les jours seront laissés non filtrés")
+        calendar = pd.DataFrame()
 
     stop_ids = {}
     all_ids = set()
@@ -196,6 +201,10 @@ def main():
             hit = chunk[chunk["stop_id"].isin(all_ids)]
             if not hit.empty:
                 pieces.append(hit)
+
+    if not pieces:
+        raise RuntimeError("Aucun horaire correspondant aux gares suivies n'a été trouvé.")
+
     hits = pd.concat(pieces, ignore_index=True)
     hits["stop_sequence"] = hits["stop_sequence"].astype(int)
 
@@ -230,11 +239,12 @@ def main():
             if trip_id not in meta.index:
                 continue
             row = meta.loc[trip_id]
-            service = calendar[calendar["service_id"] == row.get("service_id")]
             days = []
-            if not service.empty:
-                service_row = service.iloc[0]
-                days = [day for day in DAYS if service_row.get(day) == "1"]
+            if not calendar.empty and "service_id" in calendar.columns:
+                service = calendar[calendar["service_id"] == row.get("service_id")]
+                if not service.empty:
+                    service_row = service.iloc[0]
+                    days = [day for day in DAYS if service_row.get(day) == "1"]
 
             trips_out.append({
                 "trip_id": trip_id,
