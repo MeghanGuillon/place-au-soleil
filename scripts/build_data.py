@@ -6,6 +6,7 @@ et écrit un fichier data/routes.json exploitable par le site.
 
 import io
 import json
+import math
 import os
 import re
 import unicodedata
