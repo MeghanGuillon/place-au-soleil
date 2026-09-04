@@ -448,26 +448,41 @@ def main():
                 shape_points = meta["shape_id"]  # on garde juste le 1er shape_id rencontré
 
         # Récupère le tracé géométrique réel pour ce trajet
-        shape_coords = []
-        if shape_points:
-            with zf.open("shapes.txt") as f:
-                for chunk in pd.read_csv(f, dtype=str, chunksize=500_000):
-                    match = chunk[chunk["shape_id"] == shape_points]
-                    if not match.empty:
-                        match = match.astype({"shape_pt_sequence": int,
-                                               "shape_pt_lat": float,
-                                               "shape_pt_lon": float})
-                        match = match.sort_values("shape_pt_sequence")
-                        shape_coords = list(zip(match["shape_pt_lat"], match["shape_pt_lon"]))
-                        break
+        # Récupère le tracé géométrique réel pour ce trajet
+shape_coords = []
+segments = []
 
-        output_routes.append({
-            "id": route["id"],
-            "name": route["name"],
-            "shape": shape_coords,
-            "trips": sorted(trips_out, key=lambda t: t["departure_time"]),
-        })
+if shape_points:
+    with zf.open("shapes.txt") as f:
+        for chunk in pd.read_csv(f, dtype=str, chunksize=500_000):
+            match = chunk[chunk["shape_id"] == shape_points]
 
+            if not match.empty:
+                points = get_shape_points(
+                    match,
+                    shape_points,
+                )
+
+            shape_coords = [
+                        [
+                            float(point["shape_pt_lat"]),
+                            float(point["shape_pt_lon"]),
+                        ]
+                        for point in points
+                    ]
+    
+                    segments = build_segments(points)
+    
+                    break
+
+    output_routes.append({
+    "id": route["id"],
+    "name": route["name"],
+    "shape": shape_coords,
+    "segments": segments,
+    "trips": sorted(trips_out, key=lambda t: t["departure_time"]),
+    })
+    
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump({
@@ -480,37 +495,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Test temporaire : Paris, 4 septembre 2026 à 10h UTC
-    test_dt = datetime(
-        2026,
-        9,
-        4,
-        10,
-        0,
-        tzinfo=timezone.utc,
-    )
-
-    azimuth, elevation = solar_position(
-        48.8566,
-        2.3522,
-        test_dt,
-    )
-
-    print("TEST SOLAIRE")
-    print("Azimut :", round(azimuth, 1))
-    print("Élévation :", round(elevation, 1))
-
-    test_bearing = bearing(
-        48.8566,
-        2.3522,
-        48.6900,
-        2.3700,
-    )
-
-    print("Cap du train :", round(test_bearing, 1))
-    print(
-        "Côté du soleil :",
-        sun_side(test_bearing, azimuth),
-    )
-
-    # main()
+    main()
