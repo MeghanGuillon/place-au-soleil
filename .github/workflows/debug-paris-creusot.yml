@@ -1,0 +1,21 @@
+name: Diagnostic RFN Paris Le Creusot
+
+on:
+  push:
+    paths:
+      - 'tools/debug_pair_paris_creusot.py'
+      - '.github/workflows/debug-paris-creusot.yml'
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances
+        run: pip install -r scripts/requirements.txt
+      - name: Diagnostiquer Paris Le Creusot
+        run: python tools/debug_pair_paris_creusot.py
