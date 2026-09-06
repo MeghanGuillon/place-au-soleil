@@ -2,7 +2,7 @@ name: Mise à jour des données SNCF
 
 on:
   schedule:
-    - cron: '0 3 * * 1'   # chaque lundi à 3h UTC
+    - cron: '0 3 * * *'   # chaque jour à 3h UTC
   workflow_dispatch:
   push:
     paths:
@@ -31,5 +31,5 @@ jobs:
       - name: Committer les changements
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Mise à jour hebdomadaire des données SNCF"
+          commit_message: "Mise à jour quotidienne des données SNCF"
           file_pattern: data
