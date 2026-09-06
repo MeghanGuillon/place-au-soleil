@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'tools/debug_pair_paris_creusot.py'
+      - 'tools/test_rfn_bridges.py'
       - '.github/workflows/debug-paris-creusot.yml'
   workflow_dispatch:
 
@@ -17,5 +18,5 @@ jobs:
           python-version: '3.11'
       - name: Installer les dépendances
         run: pip install -r scripts/requirements.txt
-      - name: Diagnostiquer Paris Le Creusot
-        run: python tools/debug_pair_paris_creusot.py
+      - name: Tester la réparation des jonctions RFN
+        run: python tools/test_rfn_bridges.py
