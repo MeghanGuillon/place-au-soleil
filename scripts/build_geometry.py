@@ -27,6 +27,7 @@ SEGMENTS_DIR = os.path.join(ROOT, "segments")
 RFN_URL = "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/formes-des-lignes-du-rfn/records"
 ROUND_DIGITS = 5
 SHARDS = "0123456789abcdef"
+BRIDGE_MAX_KM = 0.12
 
 
 def haversine(a, b):
@@ -111,6 +112,51 @@ def build_graph(records):
     return graph
 
 
+def repair_small_gaps(graph, max_km=BRIDGE_MAX_KM):
+    """Reconnecte uniquement les extrémités de lignes séparées par de petites lacunes RFN.
+
+    Les données de lignes sont parfois découpées en objets qui s'arrêtent quelques mètres avant
+    l'objet suivant. Sans ce raccord, A* peut faire un détour de centaines de kilomètres. On ne
+    part que des nœuds de degré 1 et on ne relie que leur voisin spatial le plus proche à <=120 m.
+    Les contrôles de distance du routage restent ensuite actifs pour rejeter les chemins aberrants.
+    """
+    endpoints = [node for node, links in graph.items() if len(links) == 1]
+    cell = 0.003
+    spatial = defaultdict(list)
+    for node in graph:
+        spatial[(math.floor(node[0] / cell), math.floor(node[1] / cell))].append(node)
+
+    bridges = []
+    for endpoint in endpoints:
+        bx = math.floor(endpoint[0] / cell)
+        by = math.floor(endpoint[1] / cell)
+        direct = set(graph[endpoint])
+        best = None
+        best_d = max_km
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for candidate in spatial.get((bx + dx, by + dy), []):
+                    if candidate == endpoint or candidate in direct:
+                        continue
+                    d = haversine(endpoint, candidate)
+                    # Écarte les quasi-doublons de quelques mètres déjà couverts par l'arrondi.
+                    if 0.003 < d < best_d:
+                        best = candidate
+                        best_d = d
+        if best is not None:
+            bridges.append((endpoint, best, best_d))
+
+    # Ajoute après la recherche pour que les ponts créés ne modifient pas la sélection des suivants.
+    for a, b, d in bridges:
+        old = graph[a].get(b)
+        if old is None or d < old:
+            graph[a][b] = d
+            graph[b][a] = d
+
+    print(f"Jonctions RFN réparées : {len(bridges)} extrémités reconnectées à <= {max_km * 1000:.0f} m")
+    return graph
+
+
 def build_grid(nodes, cell=0.05):
     grid = defaultdict(list)
     for node in nodes:
@@ -122,19 +168,16 @@ def snap(point, grid, cell):
     bx, by = math.floor(point[0] / cell), math.floor(point[1] / cell)
     best = None
     best_d = float("inf")
+    # Cherche dans toutes les cellules voisines utiles au lieu de s'arrêter au premier anneau occupé.
     for radius in range(0, 5):
-        found = False
         for dx in range(-radius, radius + 1):
             for dy in range(-radius, radius + 1):
                 if radius and abs(dx) != radius and abs(dy) != radius:
                     continue
                 for node in grid.get((bx + dx, by + dy), []):
-                    found = True
                     d = haversine(point, node)
                     if d < best_d:
                         best, best_d = node, d
-        if found and best is not None:
-            return best, best_d
     return best, best_d
 
 
@@ -203,7 +246,7 @@ def main():
     pairs = load_pairs()
     print(f"Paires de gares adjacentes à traiter : {len(pairs)}")
 
-    graph = build_graph(fetch_rfn())
+    graph = repair_small_gaps(build_graph(fetch_rfn()))
     grid, cell = build_grid(graph.keys())
 
     involved = {sid for key in pairs for sid in key.split("|", 1)}
@@ -254,6 +297,7 @@ def main():
         "pairs_routed": ok,
         "pairs_skipped": skipped,
         "pairs_failed": failures,
+        "bridge_max_m": int(BRIDGE_MAX_KM * 1000),
         "shards": list(SHARDS),
     }
     with open(os.path.join(SEGMENTS_DIR, "index.json"), "w", encoding="utf-8") as f:
