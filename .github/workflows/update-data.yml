@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'scripts/**'
+      - 'scripts/build_data.py'
+      - 'scripts/requirements.txt'
       - '.github/workflows/update-data.yml'
 
 permissions:
