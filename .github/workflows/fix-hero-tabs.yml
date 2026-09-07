@@ -14,26 +14,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Corriger onglets et fondu hero
+      - name: Corriger icones et fondu hero
         run: |
           python - <<'PY'
-          import base64
           from pathlib import Path
-
-          index = Path('index.html')
-          html = index.read_text(encoding='utf-8')
-          route_icon = '<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z"></path><path d="M8 17l-2 4"></path><path d="M16 17l2 4"></path><path d="M8 7h8"></path><path d="M7.5 12h.01"></path><path d="M16.5 12h.01"></path></svg><span>Planifiez votre trajet</span>'
-          ticket_icon = '<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5 14.8 3.3a2 2 0 0 1 2.7.7l2.5 4.4a2 2 0 0 1-.7 2.7L8.5 17.3a2 2 0 0 1-2.7-.7L3.3 12.2A2 2 0 0 1 4 9.5Z"></path><path d="M9 8.8l.01.01"></path><path d="M12 13.9l.01.01"></path><path d="M11 7.6l3.1 5.3"></path></svg><span>J’ai un numéro de train</span>'
-          html = html.replace('>🚆 Planifiez votre trajet</button>', '>' + route_icon + '</button>')
-          html = html.replace('>🎫 J’ai un numéro de train</button>', '>' + ticket_icon + '</button>')
-          index.write_text(html, encoding='utf-8')
 
           css_path = Path('ui.css')
           css = css_path.read_text(encoding='utf-8')
-          patch = base64.b64decode('CgovKiBBanVzdGVtZW50cyBEQSBoZXJvIOKAlCBvbmdsZXRzIG1hcXVldHRlICsgZm9uZHUgYmFzICovCi5oZXJvOmJlZm9yZXsKICBiYWNrZ3JvdW5kOgogICAgbGluZWFyLWdyYWRpZW50KDkwZGVnLHJnYmEoMywyNywzOSwuOTMpIDAlLHJnYmEoMywyNywzOSwuNzkpIDMwJSxyZ2JhKDMsMjcsMzksLjQyKSA1NCUscmdiYSgzLDI3LDM5LC4xMCkgNzglKSwKICAgIGxpbmVhci1ncmFkaWVudCgxODBkZWcscmdiYSgzLDI3LDM5LC4wMykgMCUscmdiYSgzLDI3LDM5LC4wOCkgNTYlLHJnYmEoMjUwLDI0NywyNDAsLjMwKSA3OCUscmdiYSgyNTAsMjQ3LDI0MCwuOTgpIDEwMCUpOwp9Ci5oZXJvOmFmdGVyewogIGxlZnQ6LTglOwogIHJpZ2h0Oi04JTsKICBib3R0b206LTk1cHg7CiAgaGVpZ2h0OjMyMHB4OwogIHotaW5kZXg6MTsKICBiYWNrZ3JvdW5kOgogICAgcmFkaWFsLWdyYWRpZW50KGVsbGlwc2UgYXQgY2VudGVyLHJnYmEoMjUwLDI0NywyNDAsLjg4KSAwJSxyZ2JhKDI1MCwyNDcsMjQwLC43MikgNDQlLHJnYmEoMjUwLDI0NywyNDAsMCkgNzIlKSwKICAgIGxpbmVhci1ncmFkaWVudCgxODBkZWcscmdiYSgyNTAsMjQ3LDI0MCwwKSAwJSxyZ2JhKDI1MCwyNDcsMjQwLC40NCkgMzAlLHJnYmEoMjUwLDI0NywyNDAsLjkyKSA2MiUsdihhci0tc2FuZCkgMTAwJSk7CiAgZmlsdGVyOmJsdXIoMjhweCk7CiAgdHJhbnNmb3JtOnNjYWxlKDEuMDgpOwp9Ci5zZWN0aW9uOmJlZm9yZXsKICBjb250ZW50OiIiOwogIHBvc2l0aW9uOmFic29sdXRlOwogIGxlZnQ6LTZ2dzsKICByaWdodDotNnZ3OwogIHRvcDotMTU1cHg7CiAgaGVpZ2h0OjE5MHB4OwogIHotaW5kZXg6LTE7CiAgcG9pbnRlci1ldmVudHM6bm9uZTsKICBiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxODBkZWcscmdiYSgyNTAsMjQ3LDI0MCwwKSxyZ2JhKDI1MCwyNDcsMjQwLC45MikgNTglLHZhcigtLXNhbmQpKTsKICBmaWx0ZXI6Ymx1cigyMnB4KTsKfQoucGFuZWx7CiAgYm9yZGVyLXJhZGl1czowIDI2cHggMjZweCAyNnB4OwogIGJvcmRlci10b3AtbGVmdC1yYWRpdXM6MDsKfQoucGxhbm5lci10YWJzewogIHRvcDotNThweDsKICBoZWlnaHQ6NThweDsKICBmaWx0ZXI6ZHJvcC1zaGFkb3coMCAtOHB4IDE4cHggcmdiYSg3LDQ1LDYwLC4xMCkpOwp9Ci5wbGFubmVyLXRhYnsKICBoZWlnaHQ6NThweDsKICBtaW4td2lkdGg6MjQwcHg7CiAgZGlzcGxheTppbmxpbmUtZmxleDsKICBhbGlnbi1pdGVtczpjZW50ZXI7CiAganVzdGlmeS1jb250ZW50OmNlbnRlcjsKICBnYXA6MTJweDsKICBwYWRkaW5nOjAgMjlweDsKICBib3JkZXI6MXB4IHNvbGlkIHJnYmEoNyw0NSw2MCwuMTIpOwogIGJvcmRlci1ib3R0b206MXB4IHNvbGlkIHJnYmEoNyw0NSw2MCwuMTIpOwogIGJvcmRlci1yYWRpdXM6MTZweCAxNnB4IDAgMDsKICBiYWNrZ3JvdW5kOnJnYmEoMjM5LDIzNiwyMjgsLjkyKTsKICBjb2xvcjpyZ2JhKDcsNDUsNjAsLjYyKTsKICBmb250LXNpemU6MTRweDsKICBsaW5lLWhlaWdodDoxOwogIHBvc2l0aW9uOnJlbGF0aXZlOwp9Ci5wbGFubmVyLXRhYiArIC5wbGFubmVyLXRhYnsKICBtYXJnaW4tbGVmdDowOwogIGJvcmRlci1sZWZ0OjA7Cn0KLnBsYW5uZXItdGFiICsgLnBsYW5uZXItdGFiOmJlZm9yZXsKICBjb250ZW50OiIiOwogIHBvc2l0aW9uOmFic29sdXRlOwogIGxlZnQ6MDsKICB0b3A6MTNweDsKICBib3R0b206MTNweDsKICB3aWR0aDoxcHg7CiAgYmFja2dyb3VuZDpyZ2JhKDcsNDUsNjAsLjIwKTsKfQoucGxhbm5lci10YWIuYWN0aXZlewogIGJhY2tncm91bmQ6dmFyKC0tcGFwZXIpOwogIGNvbG9yOnZhcigtLWluayk7CiAgYm9yZGVyLWJvdHRvbS1jb2xvcjp2YXIoLS1wYXBlcik7Cn0KLnBsYW5uZXItdGFiLmFjdGl2ZTphZnRlcnsKICBjb250ZW50OiIiOwogIHBvc2l0aW9uOmFic29sdXRlOwogIGxlZnQ6MjJweDsKICByaWdodDoyMnB4OwogIGJvdHRvbTowOwogIGhlaWdodDozcHg7CiAgYm9yZGVyLXJhZGl1czo5OXB4IDk5cHggMCAwOwogIGJhY2tncm91bmQ6dmFyKC0taW5rKTsKfQoucGxhbm5lci10YWIgLnRhYi1pY29uewogIHdpZHRoOjIycHg7CiAgaGVpZ2h0OjIycHg7CiAgZmxleDowIDAgMjJweDsKICBmaWxsOm5vbmU7CiAgc3Ryb2tlOmN1cnJlbnRDb2xvcjsKICBzdHJva2Utd2lkdGg6MjsKICBzdHJva2UtbGluZWNhcDpyb3VuZDsKICBzdHJva2UtbGluZWpvaW46cm91bmQ7Cn0KLnBsYW5uZXItdGFiLmFjdGl2ZSAudGFiLWljb257Y29sb3I6dmFyKC0taW5rKX0KQG1lZGlhKG1heC13aWR0aDo4NTBweCl7CiAgLmhlcm86YWZ0ZXJ7Ym90dG9tOi05NnB4O2hlaWdodDozMDBweDtmaWx0ZXI6Ymx1cigyNHB4KX0KICAuc2VjdGlvbjpiZWZvcmV7dG9wOi0xMzBweDtoZWlnaHQ6MTYwcHh9CiAgLnBsYW5uZXItdGFic3t0b3A6LTU0cHg7aGVpZ2h0OjU0cHg7d2lkdGg6Y2FsYygxMDAlICsgMnB4KX0KICAucGxhbm5lci10YWJ7aGVpZ2h0OjU0cHg7bWluLXdpZHRoOjA7Z2FwOjlweDtwYWRkaW5nOjAgMTJweDtmb250LXNpemU6MTJweH0KICAucGxhbm5lci10YWIgLnRhYi1pY29ue3dpZHRoOjE5cHg7aGVpZ2h0OjE5cHg7ZmxleC1iYXNpczoxOXB4fQogIC5wbGFubmVyLXRhYi5hY3RpdmU6YWZ0ZXJ7bGVmdDoxNHB4O3JpZ2h0OjE0cHh9Cn0K').decode('utf-8')
-          marker = '/* Ajustements DA hero — onglets maquette + fondu bas */'
+          css = css.replace('v(ar--sand)', 'var(--sand)')
+
+          patch = '''
+
+/* Correctif icones onglets + fondu hero */
+.planner-tab svg.tab-icon,
+.planner-tab .tab-icon{
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+  display:block!important;
+  color:currentColor!important;
+  background:none!important;
+  overflow:visible!important;
+}
+.planner-tab svg.tab-icon *,
+.planner-tab .tab-icon path,
+.planner-tab .tab-icon line,
+.planner-tab .tab-icon polyline,
+.planner-tab .tab-icon circle,
+.planner-tab .tab-icon rect{
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.9!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.planner-tab.active svg.tab-icon *,
+.planner-tab.active .tab-icon path,
+.planner-tab.active .tab-icon line,
+.planner-tab.active .tab-icon polyline,
+.planner-tab.active .tab-icon circle,
+.planner-tab.active .tab-icon rect{
+  stroke:var(--ink)!important;
+}
+.hero:after{
+  bottom:-115px!important;
+  height:360px!important;
+  filter:blur(34px)!important;
+  background:
+    radial-gradient(ellipse at center,rgba(250,247,240,.94) 0%,rgba(250,247,240,.78) 42%,rgba(250,247,240,0) 74%),
+    linear-gradient(180deg,rgba(250,247,240,0) 0%,rgba(250,247,240,.48) 30%,rgba(250,247,240,.95) 63%,var(--sand) 100%)!important;
+}
+.section:before{
+  top:-175px!important;
+  height:220px!important;
+  filter:blur(28px)!important;
+}
+'''
+          marker = '/* Correctif icones onglets + fondu hero */'
           if marker in css:
-              css = css[:css.index(marker)].rstrip() + '\n' + patch
+              css = css[:css.index(marker)].rstrip() + patch
           else:
               css = css.rstrip() + patch
           css_path.write_text(css, encoding='utf-8')
@@ -41,5 +80,5 @@ jobs:
       - name: Committer les ajustements
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Ajuste les onglets du hero et le fondu"
-          file_pattern: index.html ui.css
+          commit_message: "Corrige les icones des onglets du hero"
+          file_pattern: ui.css
