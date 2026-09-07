@@ -25,6 +25,10 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       .hero:after{z-index:2!important}
       .hero .nav{z-index:5!important}
       .hero .hero-copy{z-index:6!important}
+      #planner .planner-tabs{overflow:visible!important}
+      #planner .planner-tab:not(.active){background:rgba(239,236,228,.58)!important;backdrop-filter:blur(14px) saturate(1.18)!important;-webkit-backdrop-filter:blur(14px) saturate(1.18)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.70),inset 0 -1px 0 rgba(255,255,255,.16),0 -2px 24px rgba(255,255,255,.24),0 0 38px rgba(216,237,242,.22)!important}
+      #planner .planner-tab:not(.active):before{content:""!important;display:block!important;position:absolute!important;inset:-7px -8px -1px!important;border-radius:inherit!important;pointer-events:none!important;background:linear-gradient(135deg,rgba(255,255,255,.46),rgba(255,255,255,.08) 42%,rgba(255,200,61,.14) 76%,rgba(255,255,255,.32))!important;filter:blur(9px)!important;opacity:.66!important;z-index:-1!important}
+      #planner .planner-tab:not(.active):hover{background:rgba(239,236,228,.68)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.78),inset 0 -1px 0 rgba(255,255,255,.20),0 -2px 28px rgba(255,255,255,.30),0 0 46px rgba(216,237,242,.28)!important}
       .number-search-title{color:#a77500!important;font-weight:800!important}
       #number-search-panel .hint{color:#586b78!important}
       #number-search-panel .number-row{grid-template-columns:minmax(180px,320px) minmax(150px,220px) auto!important;align-items:end!important}
