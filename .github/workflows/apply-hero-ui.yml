@@ -1,0 +1,30 @@
+name: Appliquer le hero UI
+
+on:
+  push:
+    paths:
+      - 'scripts/apply_hero_ui.py'
+      - '.github/workflows/apply-hero-ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Appliquer le nouveau hero et le module de recherche
+        run: python scripts/apply_hero_ui.py
+
+      - name: Committer la refonte du hero
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Refond le hero et le module de recherche"
+          file_pattern: index.html ui.css
