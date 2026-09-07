@@ -10,6 +10,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 (function(){
   const STATUS_TEXT='On suit les rails à la trace pour ne rien laisser passer, même pas un rayon de soleil.';
   const DEFAULT_HELPER='Choisis d’abord une gare de départ, ou entre directement ton numéro de train.';
+  const HERO_VIDEO='./assets/place-au-soleil-video-hero.mp4?v=202609071633';
   const doneWords=['train(s) direct(s) trouvé(s)','Train ','Pas de données','Aucune donnée','Aucune destination','Choisis'];
   let observerReady=false;
 
@@ -18,13 +19,12 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     const style=document.createElement('style');
     style.id='number-search-overrides';
     style.textContent=`
-      .hero{background:url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
-      .hero-video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 52%!important;z-index:0!important;pointer-events:none!important;background:url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
+      .hero{background:#072d3c url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
+      .hero-video{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;object-fit:cover!important;object-position:center 52%!important;z-index:0!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;background:url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
       .hero:before{z-index:1!important}
       .hero:after{z-index:2!important}
       .hero .nav{z-index:5!important}
       .hero .hero-copy{z-index:6!important}
-      @media(prefers-reduced-motion:reduce){.hero-video{display:none!important}}
       .number-search-title{color:#a77500!important;font-weight:800!important}
       #number-search-panel .hint{color:#586b78!important}
       #number-search-panel .number-row{grid-template-columns:minmax(180px,320px) minmax(150px,220px) auto!important;align-items:end!important}
@@ -45,21 +45,33 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 
   function ensureHeroVideo(){
     const hero=document.querySelector('.hero');
-    if(!hero || hero.querySelector('.hero-video')) return;
-    const video=document.createElement('video');
-    video.className='hero-video';
-    video.autoplay=true;
+    if(!hero) return;
+    let video=hero.querySelector('.hero-video');
+    if(!video){
+      video=document.createElement('video');
+      video.className='hero-video';
+      video.autoplay=true;
+      video.muted=true;
+      video.defaultMuted=true;
+      video.loop=true;
+      video.playsInline=true;
+      video.preload='auto';
+      video.poster='./assets/hero-train.webp';
+      video.setAttribute('muted','');
+      video.setAttribute('playsinline','');
+      video.setAttribute('webkit-playsinline','');
+      video.setAttribute('aria-hidden','true');
+      video.innerHTML=`<source src="${HERO_VIDEO}" type="video/mp4">`;
+      hero.insertBefore(video,hero.firstChild);
+    }
+    video.style.cssText='display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;object-fit:cover!important;object-position:center 52%!important;z-index:0!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;';
     video.muted=true;
-    video.loop=true;
-    video.playsInline=true;
-    video.preload='auto';
-    video.poster='./assets/hero-train.webp';
-    video.setAttribute('aria-hidden','true');
-    video.innerHTML='<source src="./assets/place-au-soleil-video-hero.mp4" type="video/mp4">';
-    hero.insertBefore(video,hero.firstChild);
+    video.defaultMuted=true;
     const play=()=>video.play().catch(()=>{});
+    video.load();
     play();
-    window.setTimeout(play,600);
+    window.setTimeout(play,300);
+    window.setTimeout(play,1000);
   }
 
   function friendlyStatus(){
