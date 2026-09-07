@@ -26,12 +26,12 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       .hero .nav{z-index:5!important}
       .hero .hero-copy{z-index:6!important}
       #planner .planner-tabs{overflow:visible!important}
-      #planner .planner-tab:not(.active){background:rgba(239,236,228,.52)!important;backdrop-filter:blur(16px) saturate(1.22)!important;-webkit-backdrop-filter:blur(16px) saturate(1.22)!important;filter:drop-shadow(0 0 12px rgba(255,255,255,.55)) drop-shadow(0 -2px 24px rgba(216,237,242,.38))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.82),inset 0 -1px 0 rgba(255,255,255,.20),0 0 0 1px rgba(255,255,255,.18)!important}
+      #planner .planner-tab:not(.active){background:rgba(239,236,228,.40)!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important;filter:drop-shadow(0 0 10px rgba(255,255,255,.28))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.44),0 0 0 1px rgba(255,255,255,.10)!important}
       #planner .planner-tab:not(.active)::before{content:none!important;display:none!important}
-      #planner .planner-tab:not(.active)::after{content:""!important;display:block!important;position:absolute!important;inset:-13px -14px -7px!important;border-radius:24px 24px 7px 7px!important;pointer-events:none!important;border:2px solid rgba(255,255,255,.58)!important;background:rgba(255,255,255,.20)!important;filter:blur(13px)!important;-webkit-filter:blur(13px)!important;opacity:.90!important;z-index:-1!important;transform:translateZ(0)!important}
+      #planner .planner-tab:not(.active)::after{content:""!important;display:block!important;position:absolute!important;inset:-10px -10px -5px!important;border-radius:22px 22px 7px 7px!important;pointer-events:none!important;background:rgba(255,255,255,.16)!important;filter:blur(12px)!important;-webkit-filter:blur(12px)!important;opacity:.46!important;z-index:-1!important;transform:translateZ(0)!important}
       #planner .planner-tab:not(.active) span,#planner .planner-tab:not(.active) svg{position:relative!important;z-index:2!important}
-      #planner .planner-tab:not(.active):hover{background:rgba(239,236,228,.62)!important;filter:drop-shadow(0 0 16px rgba(255,255,255,.64)) drop-shadow(0 -2px 30px rgba(216,237,242,.45))!important}
-      #planner .planner-tab:not(.active):hover::after{opacity:1!important;filter:blur(16px)!important;-webkit-filter:blur(16px)!important}
+      #planner .planner-tab:not(.active):hover{background:rgba(239,236,228,.48)!important;filter:drop-shadow(0 0 12px rgba(255,255,255,.34))!important}
+      #planner .planner-tab:not(.active):hover::after{opacity:.58!important;filter:blur(14px)!important;-webkit-filter:blur(14px)!important}
       .number-search-title{color:#a77500!important;font-weight:800!important}
       #number-search-panel .hint{color:#586b78!important}
       #number-search-panel .number-row{grid-template-columns:minmax(180px,320px) minmax(150px,220px) auto!important;align-items:end!important}
