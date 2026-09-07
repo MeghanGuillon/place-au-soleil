@@ -19,9 +19,13 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     style.id='number-search-overrides';
     style.textContent=`
       .number-search-title{color:#a77500!important;font-weight:800!important}
-      #train-number.is-error{border-color:#d9483f!important;box-shadow:0 0 0 3px rgba(217,72,63,.14)!important;background:#fffafa!important}
+      #number-search-panel .hint{color:#586b78!important}
+      #number-search-panel .number-row{grid-template-columns:minmax(180px,320px) minmax(150px,220px) auto!important;align-items:end!important}
+      #number-search-panel .number-date-field{display:block!important}
+      #train-number.is-error,#number-date.is-error{border-color:#d9483f!important;box-shadow:0 0 0 3px rgba(217,72,63,.14)!important;background:#fffafa!important}
       .number-feedback{display:none;margin-top:10px;color:#b93630;font-size:13px;line-height:1.45;font-weight:600}
       .number-feedback.show{display:block}
+      @media(max-width:850px){#number-search-panel .number-row{grid-template-columns:1fr!important}}
     `;
     document.head.appendChild(style);
   }
@@ -35,6 +39,39 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     }
     const text=status.querySelector('.status-text');
     if(text) text.textContent=STATUS_TEXT;
+  }
+
+  function ensureNumberDate(){
+    const row=document.querySelector('#number-search-panel .number-row');
+    const button=document.getElementById('number-search-btn');
+    const mainDate=document.getElementById('date');
+    if(!row || !button || !mainDate) return null;
+    let input=document.getElementById('number-date');
+    if(!input){
+      const field=document.createElement('div');
+      field.className='field number-date-field';
+      field.innerHTML='<label>Date du départ</label><input type="date" id="number-date">';
+      button.insertAdjacentElement('beforebegin',field);
+      input=field.querySelector('input');
+    }
+    input.value=mainDate.value;
+    input.min=mainDate.min || '';
+    input.max=mainDate.max || '';
+    if(!input.dataset.dateHooked){
+      input.dataset.dateHooked='true';
+      input.addEventListener('input',()=>{
+        mainDate.value=input.value;
+        mainDate.dispatchEvent(new Event('change',{bubbles:true}));
+        clearNumberError();
+      });
+      mainDate.addEventListener('change',()=>{
+        input.value=mainDate.value;
+        input.min=mainDate.min || '';
+        input.max=mainDate.max || '';
+        clearNumberError();
+      });
+    }
+    return input;
   }
 
   function ensureNumberFeedback(){
@@ -54,18 +91,22 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 
   function clearNumberError(){
     const input=document.getElementById('train-number');
+    const date=document.getElementById('number-date');
     const feedback=ensureNumberFeedback();
     input?.classList.remove('is-error');
+    date?.classList.remove('is-error');
     if(feedback){
       feedback.classList.remove('show');
       feedback.textContent='';
     }
   }
 
-  function setNumberError(message){
+  function setNumberError(message,{date=false}={}){
     const input=document.getElementById('train-number');
+    const dateInput=document.getElementById('number-date');
     const feedback=ensureNumberFeedback();
     input?.classList.add('is-error');
+    if(date) dateInput?.classList.add('is-error');
     if(feedback){
       feedback.textContent=message;
       feedback.classList.add('show');
@@ -83,9 +124,13 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function boot(){
     injectSearchStyles();
     friendlyStatus();
+    ensureNumberDate();
     ensureNumberFeedback();
     const plannerFoot=document.querySelector('.planner-foot');
     if(plannerFoot) plannerFoot.style.display='none';
+
+    const hint=document.querySelector('#number-search-panel > .hint');
+    if(hint) hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
 
     const trainInput=document.getElementById('train-number');
     if(trainInput && !trainInput.dataset.errorHooked){
@@ -99,7 +144,10 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       btn.dataset.statusHooked='true';
       btn.addEventListener('click',()=>{
         if(btn.disabled) return;
-        if(id==='number-search-btn') clearNumberError();
+        if(id==='number-search-btn'){
+          ensureNumberDate();
+          clearNumberError();
+        }
         setSearching(true);
         window.setTimeout(()=>setSearching(false),10000);
       });
@@ -111,7 +159,13 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       new MutationObserver(()=>{
         const text=helper.textContent||'';
         if(text.startsWith('Aucun train n°')){
-          setNumberError(text);
+          setNumberError(text.replace('Vérifie le numéro ou la date.','Vérifie le numéro de train ou la date de départ.'),{date:true});
+          helper.textContent=DEFAULT_HELPER;
+          setSearching(false);
+          return;
+        }
+        if(text.includes('Pas de données disponibles pour cette date.')){
+          setNumberError('Aucune donnée disponible pour cette date. Vérifie la date de départ.',{date:true});
           helper.textContent=DEFAULT_HELPER;
           setSearching(false);
           return;
