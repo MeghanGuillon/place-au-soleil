@@ -12,8 +12,10 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   const STATUS_TEXT='On suit les rails à la trace pour ne rien laisser passer, même pas un rayon de soleil.';
   const DEFAULT_HELPER='Choisis d’abord une gare de départ, ou entre directement ton numéro de train.';
   const HERO_VIDEO='./assets/place-au-soleil-video-hero.mp4?v=202609071633';
-  const doneWords=['train(s) direct(s) trouvé(s)','Train ','Pas de données','Aucune donnée','Aucune destination','Choisis'];
+  const doneWords=['train(s) direct(s) trouvé(s)','train(s) à venir trouvé(s)','Train ','Pas de données','Aucune donnée','Aucune destination','Choisis'];
   let observerReady=false;
+
+  function $(id){return document.getElementById(id)}
 
   function injectSearchStyles(){
     if(document.getElementById('number-search-overrides')) return;
@@ -102,7 +104,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   function friendlyStatus(){
-    const status=document.getElementById('status');
+    const status=$('status');
     if(!status) return;
     status.classList.add('friendly-status');
     if(!status.querySelector('.status-sun')){
@@ -117,8 +119,8 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   function syncNumberDateToMain(){
-    const input=document.getElementById('number-date');
-    const mainDate=document.getElementById('date');
+    const input=$('number-date');
+    const mainDate=$('date');
     if(!input || !mainDate || !isFullDate(input.value)) return false;
     if(mainDate.value!==input.value){
       mainDate.value=input.value;
@@ -129,10 +131,10 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 
   function ensureNumberDate(){
     const row=document.querySelector('#number-search-panel .number-row');
-    const button=document.getElementById('number-search-btn');
-    const mainDate=document.getElementById('date');
+    const button=$('number-search-btn');
+    const mainDate=$('date');
     if(!row || !button || !mainDate) return null;
-    let input=document.getElementById('number-date');
+    let input=$('number-date');
     if(!input){
       const field=document.createElement('div');
       field.className='field number-date-field';
@@ -167,10 +169,10 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   function ensureNumberFeedback(){
-    const panel=document.getElementById('number-search-panel');
+    const panel=$('number-search-panel');
     const row=panel?.querySelector('.number-row');
     if(!panel || !row) return null;
-    let feedback=document.getElementById('number-feedback');
+    let feedback=$('number-feedback');
     if(!feedback){
       feedback=document.createElement('div');
       feedback.id='number-feedback';
@@ -182,8 +184,8 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   function clearNumberError(){
-    const input=document.getElementById('train-number');
-    const date=document.getElementById('number-date');
+    const input=$('train-number');
+    const date=$('number-date');
     const feedback=ensureNumberFeedback();
     input?.classList.remove('is-error');
     date?.classList.remove('is-error');
@@ -194,8 +196,8 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   function setNumberError(message,{date=false}={}){
-    const input=document.getElementById('train-number');
-    const dateInput=document.getElementById('number-date');
+    const input=$('train-number');
+    const dateInput=$('number-date');
     const feedback=ensureNumberFeedback();
     input?.classList.add('is-error');
     if(date) dateInput?.classList.add('is-error');
@@ -205,9 +207,52 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     }
   }
 
+  function parisNowParts(){
+    const parts=new Intl.DateTimeFormat('en-CA',{
+      timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+    }).formatToParts(new Date()).reduce((acc,p)=>(acc[p.type]=p.value,acc),{});
+    return {date:`${parts.year}-${parts.month}-${parts.day}`,minutes:Number(parts.hour)*60+Number(parts.minute)};
+  }
+
+  function optionDepartureMinutes(option){
+    const text=option?.textContent||'';
+    const match=text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\s*→/);
+    if(!match) return null;
+    return Number(match[1])*60+Number(match[2]);
+  }
+
+  function filterUpcomingTrains(){
+    const date=$('date')?.value;
+    const trip=$('trip');
+    const trainbox=$('trainbox');
+    const helper=$('helper');
+    if(!date || !trip || !trainbox || !helper || !trip.options.length) return false;
+    const now=parisNowParts();
+    if(date!==now.date) return false;
+    const before=trip.options.length;
+    Array.from(trip.options).forEach(option=>{
+      const dep=optionDepartureMinutes(option);
+      if(dep!==null && dep<now.minutes) option.remove();
+    });
+    if(before===trip.options.length) return false;
+    if(!trip.options.length){
+      trainbox.style.display='none';
+      helper.textContent='Aucun train à venir trouvé pour aujourd’hui sur ce trajet.';
+      setSearching(false);
+      return true;
+    }
+    trip.value=trip.options[0].value;
+    helper.textContent=`${trip.options.length} train(s) à venir trouvé(s) pour aujourd’hui.`;
+    return true;
+  }
+
+  function scheduleUpcomingFilter(){
+    [120,320,700,1200].forEach(delay=>window.setTimeout(filterUpcomingTrains,delay));
+  }
+
   function setSearching(active){
     const panel=document.querySelector('#planner .panel');
-    const status=document.getElementById('status');
+    const status=$('status');
     panel?.classList.toggle('is-searching',active);
     status?.classList.toggle('is-searching',active);
     friendlyStatus();
@@ -226,14 +271,14 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     const hint=document.querySelector('#number-search-panel > .hint');
     if(hint) hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
 
-    const trainInput=document.getElementById('train-number');
+    const trainInput=$('train-number');
     if(trainInput && !trainInput.dataset.errorHooked){
       trainInput.dataset.errorHooked='true';
       trainInput.addEventListener('input',clearNumberError);
     }
 
     ['search','number-search-btn'].forEach(id=>{
-      const btn=document.getElementById(id);
+      const btn=$(id);
       if(!btn || btn.dataset.statusHooked) return;
       btn.dataset.statusHooked='true';
       btn.addEventListener('click',()=>{
@@ -244,11 +289,12 @@ fetch('./landing-blocks.html',{cache:'no-store'})
           clearNumberError();
         }
         setSearching(true);
+        scheduleUpcomingFilter();
         window.setTimeout(()=>setSearching(false),10000);
       });
     });
 
-    const helper=document.getElementById('helper');
+    const helper=$('helper');
     if(helper && !observerReady){
       observerReady=true;
       new MutationObserver(()=>{
@@ -264,6 +310,9 @@ fetch('./landing-blocks.html',{cache:'no-store'})
           helper.textContent=DEFAULT_HELPER;
           setSearching(false);
           return;
+        }
+        if(text.includes('train(s) direct(s) trouvé(s)') || text.includes('services portant le n°') || text.includes('Train ')){
+          window.setTimeout(filterUpcomingTrains,0);
         }
         if(doneWords.some(word=>text.includes(word))) setSearching(false);
       }).observe(helper,{childList:true,characterData:true,subtree:true});
