@@ -26,12 +26,12 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       .hero .nav{z-index:5!important}
       .hero .hero-copy{z-index:6!important}
       #planner .planner-tabs{overflow:visible!important}
-      #planner .planner-tab:not(.active){background:rgba(239,236,228,.40)!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important;filter:drop-shadow(0 0 10px rgba(255,255,255,.28))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.44),0 0 0 1px rgba(255,255,255,.10)!important}
+      #planner .planner-tab:not(.active){background:rgba(255,255,255,.18)!important;backdrop-filter:blur(16px) saturate(1.04)!important;-webkit-backdrop-filter:blur(16px) saturate(1.04)!important;filter:drop-shadow(0 0 8px rgba(255,255,255,.18))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 0 0 1px rgba(255,255,255,.08)!important;color:rgba(255,255,255,.68)!important}
       #planner .planner-tab:not(.active)::before{content:none!important;display:none!important}
-      #planner .planner-tab:not(.active)::after{content:""!important;display:block!important;position:absolute!important;inset:-10px -10px -5px!important;border-radius:22px 22px 7px 7px!important;pointer-events:none!important;background:rgba(255,255,255,.16)!important;filter:blur(12px)!important;-webkit-filter:blur(12px)!important;opacity:.46!important;z-index:-1!important;transform:translateZ(0)!important}
+      #planner .planner-tab:not(.active)::after{content:""!important;display:block!important;position:absolute!important;inset:-8px -9px -4px!important;border-radius:22px 22px 7px 7px!important;pointer-events:none!important;background:rgba(255,255,255,.10)!important;filter:blur(10px)!important;-webkit-filter:blur(10px)!important;opacity:.30!important;z-index:-1!important;transform:translateZ(0)!important}
       #planner .planner-tab:not(.active) span,#planner .planner-tab:not(.active) svg{position:relative!important;z-index:2!important}
-      #planner .planner-tab:not(.active):hover{background:rgba(239,236,228,.48)!important;filter:drop-shadow(0 0 12px rgba(255,255,255,.34))!important}
-      #planner .planner-tab:not(.active):hover::after{opacity:.58!important;filter:blur(14px)!important;-webkit-filter:blur(14px)!important}
+      #planner .planner-tab:not(.active):hover{background:rgba(255,255,255,.24)!important;filter:drop-shadow(0 0 10px rgba(255,255,255,.22))!important;color:rgba(255,255,255,.78)!important}
+      #planner .planner-tab:not(.active):hover::after{opacity:.38!important;filter:blur(12px)!important;-webkit-filter:blur(12px)!important}
       .number-search-title{color:#a77500!important;font-weight:800!important}
       #number-search-panel .hint{color:#586b78!important}
       #number-search-panel .number-row{grid-template-columns:minmax(180px,320px) minmax(150px,220px) auto!important;align-items:end!important}
