@@ -25,6 +25,12 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       #train-number.is-error,#number-date.is-error{border-color:#d9483f!important;box-shadow:0 0 0 3px rgba(217,72,63,.14)!important;background:#fffafa!important}
       .number-feedback{display:none;margin-top:10px;color:#b93630;font-size:13px;line-height:1.45;font-weight:600}
       .number-feedback.show{display:block}
+      @media(hover:hover) and (pointer:fine){
+        .hero h1 .highlight{position:relative!important;display:inline-block!important;color:#ffc83d!important;padding:0 .08em .02em!important;margin:0 -.08em!important;border-radius:.13em!important;isolation:isolate!important;transition:color .28s ease!important;cursor:default!important}
+        .hero h1 .highlight:before{content:""!important;position:absolute!important;left:-.02em!important;right:-.02em!important;top:.10em!important;bottom:.02em!important;border-radius:.14em!important;background:#072d3c!important;transform:scaleX(0)!important;transform-origin:left center!important;transition:transform .42s cubic-bezier(.2,.8,.2,1)!important;z-index:-1!important;box-shadow:0 14px 34px rgba(3,27,39,.34)!important}
+        .hero h1 .highlight:hover{color:#fff!important}
+        .hero h1 .highlight:hover:before{transform:scaleX(1)!important}
+      }
       @media(max-width:850px){#number-search-panel .number-row{grid-template-columns:1fr!important}}
     `;
     document.head.appendChild(style);
