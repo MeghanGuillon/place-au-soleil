@@ -14,135 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
       - name: Corriger onglets et fondu hero
         run: |
           python - <<'PY'
+          import base64
           from pathlib import Path
 
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
-          route_icon = '''<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z"></path><path d="M8 17l-2 4"></path><path d="M16 17l2 4"></path><path d="M8 7h8"></path><path d="M7.5 12h.01"></path><path d="M16.5 12h.01"></path></svg><span>Planifiez votre trajet</span>'''
-          ticket_icon = '''<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5 14.8 3.3a2 2 0 0 1 2.7.7l2.5 4.4a2 2 0 0 1-.7 2.7L8.5 17.3a2 2 0 0 1-2.7-.7L3.3 12.2A2 2 0 0 1 4 9.5Z"></path><path d="M9 8.8l.01.01"></path><path d="M12 13.9l.01.01"></path><path d="M11 7.6l3.1 5.3"></path></svg><span>J’ai un numéro de train</span>'''
-          html = html.replace('>🚆 Planifiez votre trajet</button>', f'>{route_icon}</button>')
-          html = html.replace('>🎫 J’ai un numéro de train</button>', f'>{ticket_icon}</button>')
+          route_icon = '<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z"></path><path d="M8 17l-2 4"></path><path d="M16 17l2 4"></path><path d="M8 7h8"></path><path d="M7.5 12h.01"></path><path d="M16.5 12h.01"></path></svg><span>Planifiez votre trajet</span>'
+          ticket_icon = '<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5 14.8 3.3a2 2 0 0 1 2.7.7l2.5 4.4a2 2 0 0 1-.7 2.7L8.5 17.3a2 2 0 0 1-2.7-.7L3.3 12.2A2 2 0 0 1 4 9.5Z"></path><path d="M9 8.8l.01.01"></path><path d="M12 13.9l.01.01"></path><path d="M11 7.6l3.1 5.3"></path></svg><span>J’ai un numéro de train</span>'
+          html = html.replace('>🚆 Planifiez votre trajet</button>', '>' + route_icon + '</button>')
+          html = html.replace('>🎫 J’ai un numéro de train</button>', '>' + ticket_icon + '</button>')
           index.write_text(html, encoding='utf-8')
 
           css_path = Path('ui.css')
           css = css_path.read_text(encoding='utf-8')
-          patch = r'''
-
-/* Ajustements DA hero — onglets maquette + fondu bas */
-.hero:before{
-  background:
-    linear-gradient(90deg,rgba(3,27,39,.93) 0%,rgba(3,27,39,.79) 30%,rgba(3,27,39,.42) 54%,rgba(3,27,39,.10) 78%),
-    linear-gradient(180deg,rgba(3,27,39,.03) 0%,rgba(3,27,39,.08) 56%,rgba(250,247,240,.30) 78%,rgba(250,247,240,.98) 100%);
-}
-.hero:after{
-  left:-8%;
-  right:-8%;
-  bottom:-95px;
-  height:320px;
-  z-index:1;
-  background:
-    radial-gradient(ellipse at center,rgba(250,247,240,.88) 0%,rgba(250,247,240,.72) 44%,rgba(250,247,240,0) 72%),
-    linear-gradient(180deg,rgba(250,247,240,0) 0%,rgba(250,247,240,.44) 30%,rgba(250,247,240,.92) 62%,var(--sand) 100%);
-  filter:blur(28px);
-  transform:scale(1.08);
-}
-.section:before{
-  content:"";
-  position:absolute;
-  left:-6vw;
-  right:-6vw;
-  top:-155px;
-  height:190px;
-  z-index:-1;
-  pointer-events:none;
-  background:linear-gradient(180deg,rgba(250,247,240,0),rgba(250,247,240,.92) 58%,var(--sand));
-  filter:blur(22px);
-}
-.panel{
-  border-radius:0 26px 26px 26px;
-  border-top-left-radius:0;
-}
-.planner-tabs{
-  top:-58px;
-  height:58px;
-  filter:drop-shadow(0 -8px 18px rgba(7,45,60,.10));
-}
-.planner-tab{
-  height:58px;
-  min-width:240px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:12px;
-  padding:0 29px;
-  border:1px solid rgba(7,45,60,.12);
-  border-bottom:1px solid rgba(7,45,60,.12);
-  border-radius:16px 16px 0 0;
-  background:rgba(239,236,228,.92);
-  color:rgba(7,45,60,.62);
-  font-size:14px;
-  line-height:1;
-  position:relative;
-}
-.planner-tab + .planner-tab{
-  margin-left:0;
-  border-left:0;
-}
-.planner-tab + .planner-tab:before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:13px;
-  bottom:13px;
-  width:1px;
-  background:rgba(7,45,60,.20);
-}
-.planner-tab.active{
-  background:var(--paper);
-  color:var(--ink);
-  border-bottom-color:var(--paper);
-}
-.planner-tab.active:after{
-  content:"";
-  position:absolute;
-  left:22px;
-  right:22px;
-  bottom:0;
-  height:3px;
-  border-radius:99px 99px 0 0;
-  background:var(--ink);
-}
-.planner-tab .tab-icon{
-  width:22px;
-  height:22px;
-  flex:0 0 22px;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:2;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-}
-.planner-tab.active .tab-icon{color:var(--ink)}
-@media(max-width:850px){
-  .hero:after{bottom:-96px;height:300px;filter:blur(24px)}
-  .section:before{top:-130px;height:160px}
-  .planner-tabs{top:-54px;height:54px;width:calc(100% + 2px)}
-  .planner-tab{height:54px;min-width:0;gap:9px;padding:0 12px;font-size:12px}
-  .planner-tab .tab-icon{width:19px;height:19px;flex-basis:19px}
-  .planner-tab.active:after{left:14px;right:14px}
-}
-'''
+          patch = base64.b64decode('CgovKiBBanVzdGVtZW50cyBEQSBoZXJvIOKAlCBvbmdsZXRzIG1hcXVldHRlICsgZm9uZHUgYmFzICovCi5oZXJvOmJlZm9yZXsKICBiYWNrZ3JvdW5kOgogICAgbGluZWFyLWdyYWRpZW50KDkwZGVnLHJnYmEoMywyNywzOSwuOTMpIDAlLHJnYmEoMywyNywzOSwuNzkpIDMwJSxyZ2JhKDMsMjcsMzksLjQyKSA1NCUscmdiYSgzLDI3LDM5LC4xMCkgNzglKSwKICAgIGxpbmVhci1ncmFkaWVudCgxODBkZWcscmdiYSgzLDI3LDM5LC4wMykgMCUscmdiYSgzLDI3LDM5LC4wOCkgNTYlLHJnYmEoMjUwLDI0NywyNDAsLjMwKSA3OCUscmdiYSgyNTAsMjQ3LDI0MCwuOTgpIDEwMCUpOwp9Ci5oZXJvOmFmdGVyewogIGxlZnQ6LTglOwogIHJpZ2h0Oi04JTsKICBib3R0b206LTk1cHg7CiAgaGVpZ2h0OjMyMHB4OwogIHotaW5kZXg6MTsKICBiYWNrZ3JvdW5kOgogICAgcmFkaWFsLWdyYWRpZW50KGVsbGlwc2UgYXQgY2VudGVyLHJnYmEoMjUwLDI0NywyNDAsLjg4KSAwJSxyZ2JhKDI1MCwyNDcsMjQwLC43MikgNDQlLHJnYmEoMjUwLDI0NywyNDAsMCkgNzIlKSwKICAgIGxpbmVhci1ncmFkaWVudCgxODBkZWcscmdiYSgyNTAsMjQ3LDI0MCwwKSAwJSxyZ2JhKDI1MCwyNDcsMjQwLC40NCkgMzAlLHJnYmEoMjUwLDI0NywyNDAsLjkyKSA2MiUsdihhci0tc2FuZCkgMTAwJSk7CiAgZmlsdGVyOmJsdXIoMjhweCk7CiAgdHJhbnNmb3JtOnNjYWxlKDEuMDgpOwp9Ci5zZWN0aW9uOmJlZm9yZXsKICBjb250ZW50OiIiOwogIHBvc2l0aW9uOmFic29sdXRlOwogIGxlZnQ6LTZ2dzsKICByaWdodDotNnZ3OwogIHRvcDotMTU1cHg7CiAgaGVpZ2h0OjE5MHB4OwogIHotaW5kZXg6LTE7CiAgcG9pbnRlci1ldmVudHM6bm9uZTsKICBiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxODBkZWcscmdiYSgyNTAsMjQ3LDI0MCwwKSxyZ2JhKDI1MCwyNDcsMjQwLC45MikgNTglLHZhcigtLXNhbmQpKTsKICBmaWx0ZXI6Ymx1cigyMnB4KTsKfQoucGFuZWx7CiAgYm9yZGVyLXJhZGl1czowIDI2cHggMjZweCAyNnB4OwogIGJvcmRlci10b3AtbGVmdC1yYWRpdXM6MDsKfQoucGxhbm5lci10YWJzewogIHRvcDotNThweDsKICBoZWlnaHQ6NThweDsKICBmaWx0ZXI6ZHJvcC1zaGFkb3coMCAtOHB4IDE4cHggcmdiYSg3LDQ1LDYwLC4xMCkpOwp9Ci5wbGFubmVyLXRhYnsKICBoZWlnaHQ6NThweDsKICBtaW4td2lkdGg6MjQwcHg7CiAgZGlzcGxheTppbmxpbmUtZmxleDsKICBhbGlnbi1pdGVtczpjZW50ZXI7CiAganVzdGlmeS1jb250ZW50OmNlbnRlcjsKICBnYXA6MTJweDsKICBwYWRkaW5nOjAgMjlweDsKICBib3JkZXI6MXB4IHNvbGlkIHJnYmEoNyw0NSw2MCwuMTIpOwogIGJvcmRlci1ib3R0b206MXB4IHNvbGlkIHJnYmEoNyw0NSw2MCwuMTIpOwogIGJvcmRlci1yYWRpdXM6MTZweCAxNnB4IDAgMDsKICBiYWNrZ3JvdW5kOnJnYmEoMjM5LDIzNiwyMjgsLjkyKTsKICBjb2xvcjpyZ2JhKDcsNDUsNjAsLjYyKTsKICBmb250LXNpemU6MTRweDsKICBsaW5lLWhlaWdodDoxOwogIHBvc2l0aW9uOnJlbGF0aXZlOwp9Ci5wbGFubmVyLXRhYiArIC5wbGFubmVyLXRhYnsKICBtYXJnaW4tbGVmdDowOwogIGJvcmRlci1sZWZ0OjA7Cn0KLnBsYW5uZXItdGFiICsgLnBsYW5uZXItdGFiOmJlZm9yZXsKICBjb250ZW50OiIiOwogIHBvc2l0aW9uOmFic29sdXRlOwogIGxlZnQ6MDsKICB0b3A6MTNweDsKICBib3R0b206MTNweDsKICB3aWR0aDoxcHg7CiAgYmFja2dyb3VuZDpyZ2JhKDcsNDUsNjAsLjIwKTsKfQoucGxhbm5lci10YWIuYWN0aXZlewogIGJhY2tncm91bmQ6dmFyKC0tcGFwZXIpOwogIGNvbG9yOnZhcigtLWluayk7CiAgYm9yZGVyLWJvdHRvbS1jb2xvcjp2YXIoLS1wYXBlcik7Cn0KLnBsYW5uZXItdGFiLmFjdGl2ZTphZnRlcnsKICBjb250ZW50OiIiOwogIHBvc2l0aW9uOmFic29sdXRlOwogIGxlZnQ6MjJweDsKICByaWdodDoyMnB4OwogIGJvdHRvbTowOwogIGhlaWdodDozcHg7CiAgYm9yZGVyLXJhZGl1czo5OXB4IDk5cHggMCAwOwogIGJhY2tncm91bmQ6dmFyKC0taW5rKTsKfQoucGxhbm5lci10YWIgLnRhYi1pY29uewogIHdpZHRoOjIycHg7CiAgaGVpZ2h0OjIycHg7CiAgZmxleDowIDAgMjJweDsKICBmaWxsOm5vbmU7CiAgc3Ryb2tlOmN1cnJlbnRDb2xvcjsKICBzdHJva2Utd2lkdGg6MjsKICBzdHJva2UtbGluZWNhcDpyb3VuZDsKICBzdHJva2UtbGluZWpvaW46cm91bmQ7Cn0KLnBsYW5uZXItdGFiLmFjdGl2ZSAudGFiLWljb257Y29sb3I6dmFyKC0taW5rKX0KQG1lZGlhKG1heC13aWR0aDo4NTBweCl7CiAgLmhlcm86YWZ0ZXJ7Ym90dG9tOi05NnB4O2hlaWdodDozMDBweDtmaWx0ZXI6Ymx1cigyNHB4KX0KICAuc2VjdGlvbjpiZWZvcmV7dG9wOi0xMzBweDtoZWlnaHQ6MTYwcHh9CiAgLnBsYW5uZXItdGFic3t0b3A6LTU0cHg7aGVpZ2h0OjU0cHg7d2lkdGg6Y2FsYygxMDAlICsgMnB4KX0KICAucGxhbm5lci10YWJ7aGVpZ2h0OjU0cHg7bWluLXdpZHRoOjA7Z2FwOjlweDtwYWRkaW5nOjAgMTJweDtmb250LXNpemU6MTJweH0KICAucGxhbm5lci10YWIgLnRhYi1pY29ue3dpZHRoOjE5cHg7aGVpZ2h0OjE5cHg7ZmxleC1iYXNpczoxOXB4fQogIC5wbGFubmVyLXRhYi5hY3RpdmU6YWZ0ZXJ7bGVmdDoxNHB4O3JpZ2h0OjE0cHh9Cn0K').decode('utf-8')
           marker = '/* Ajustements DA hero — onglets maquette + fondu bas */'
           if marker in css:
-            css = css[:css.index(marker)].rstrip() + '\n' + patch
+              css = css[:css.index(marker)].rstrip() + '\n' + patch
           else:
-            css = css.rstrip() + patch
+              css = css.rstrip() + patch
           css_path.write_text(css, encoding='utf-8')
           PY
       - name: Committer les ajustements
