@@ -1,0 +1,223 @@
+name: Appliquer UI resultats
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-result-ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ajouter les styles du bloc resultats
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          css_path = Path('ui.css')
+          css = css_path.read_text(encoding='utf-8')
+          marker = '/* Resultats UI — recommandation + carte immersive */'
+          patch = r'''
+
+/* Resultats UI — recommandation + carte immersive */
+#results{
+  margin-top:28px!important;
+  padding:18px!important;
+  border-radius:28px!important;
+  background:linear-gradient(135deg,#062f42 0%,#082538 50%,#031b29 100%)!important;
+  color:#fff!important;
+  box-shadow:0 28px 70px rgba(3,27,39,.22)!important;
+}
+#results:before{
+  content:"Votre trajet calculé";
+  display:block;
+  margin:2px 4px 16px;
+  color:rgba(255,255,255,.72);
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+#results .result-grid{
+  display:grid!important;
+  grid-template-columns:minmax(250px,320px) minmax(0,1fr)!important;
+  gap:18px!important;
+  align-items:stretch!important;
+}
+#results .verdict{
+  min-height:0!important;
+  border-radius:18px!important;
+  padding:28px 24px!important;
+  background:linear-gradient(160deg,rgba(25,88,123,.82),rgba(6,56,82,.92))!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 18px 40px rgba(0,0,0,.12)!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#results .kicker{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  color:#ffd25a!important;
+  font-size:14px!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  font-weight:800!important;
+}
+#results .kicker:before{
+  content:"☀";
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(255,200,61,.16);
+  color:#ffc83d;
+  font-size:20px;
+}
+#results .side{
+  margin:28px 0 12px!important;
+  color:#fff!important;
+  font-size:clamp(44px,5vw,64px)!important;
+  line-height:.95!important;
+  letter-spacing:-.065em!important;
+  text-shadow:0 8px 24px rgba(0,0,0,.16)!important;
+}
+#results .verdict #text{
+  margin:0 0 22px!important;
+  color:rgba(255,255,255,.88)!important;
+  font-size:17px!important;
+  line-height:1.55!important;
+}
+#results .verdict #geometry-note{
+  margin-top:auto!important;
+  color:rgba(255,255,255,.68)!important;
+  border-top:1px solid rgba(255,255,255,.12)!important;
+  padding-top:16px!important;
+}
+#results .reversal-note{
+  background:rgba(255,255,255,.10)!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  color:rgba(255,255,255,.88)!important;
+}
+#results .visual{
+  border-radius:18px!important;
+  background:#062638!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 40px rgba(0,0,0,.16)!important;
+}
+#results .visual-head{
+  position:absolute!important;
+  z-index:5!important;
+  left:20px!important;
+  right:20px!important;
+  top:20px!important;
+  padding:0!important;
+  background:transparent!important;
+  pointer-events:none!important;
+}
+#results .visual-copy{
+  max-width:360px!important;
+  padding:14px 16px!important;
+  border-radius:16px!important;
+  background:rgba(3,27,39,.58)!important;
+  backdrop-filter:blur(14px)!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+}
+#results .visual-copy b{
+  font-size:26px!important;
+  line-height:1!important;
+  margin-bottom:6px!important;
+}
+#results .visual-copy .hint{
+  color:rgba(255,255,255,.78)!important;
+  font-size:13px!important;
+}
+#results .anim-controls{
+  pointer-events:auto!important;
+  margin-left:auto!important;
+}
+#results .anim-button{
+  min-width:112px!important;
+  border-radius:999px!important;
+  padding:12px 20px!important;
+  color:#fff!important;
+  background:rgba(255,255,255,.14)!important;
+  border:1px solid rgba(255,255,255,.38)!important;
+  backdrop-filter:blur(10px)!important;
+}
+#results .sky-wrap{
+  height:430px!important;
+  border:0!important;
+  background:radial-gradient(circle at 18% 20%,rgba(255,200,61,.13),transparent 28%),linear-gradient(180deg,#092f44,#031a28)!important;
+}
+#results #route-svg{
+  height:430px!important;
+}
+#results .animation-status{
+  border-top:1px solid rgba(255,255,255,.08)!important;
+  background:rgba(3,27,39,.82)!important;
+  color:rgba(255,255,255,.72)!important;
+  padding:14px 18px!important;
+}
+#results .animation-status strong{
+  color:#fff!important;
+}
+#results .timeline{
+  height:9px!important;
+  margin:18px 8px 0!important;
+  background:rgba(255,255,255,.22)!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06)!important;
+}
+#results .stats{
+  display:grid!important;
+  grid-template-columns:repeat(3,1fr)!important;
+  gap:12px!important;
+  margin-top:14px!important;
+}
+#results .stat{
+  border:1px solid rgba(255,255,255,.09)!important;
+  background:rgba(255,255,255,.08)!important;
+  color:#fff!important;
+  border-radius:16px!important;
+  padding:16px 18px!important;
+  backdrop-filter:blur(10px)!important;
+}
+#results .stat b{
+  color:#fff!important;
+  font-size:30px!important;
+  line-height:1!important;
+}
+#results .stat span{
+  color:rgba(255,255,255,.66)!important;
+}
+@media(max-width:950px){
+  #results{padding:14px!important;border-radius:24px!important}
+  #results .result-grid{grid-template-columns:1fr!important}
+  #results .visual-head{position:static!important;padding:18px!important;background:#071d2b!important;pointer-events:auto!important}
+  #results .visual-copy{background:transparent!important;border:0!important;padding:0!important;backdrop-filter:none!important}
+  #results .sky-wrap,#results #route-svg{height:360px!important}
+  #results .stats{grid-template-columns:1fr!important}
+}
+'''
+          if marker in css:
+              css = css[:css.index(marker)].rstrip() + patch
+          else:
+              css = css.rstrip() + patch
+          css_path.write_text(css, encoding='utf-8')
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+          html = html.replace('./ui.css?v=202609071218', './ui.css?v=202609071245')
+          html = html.replace('./ui.css"', './ui.css?v=202609071245"')
+          index_path.write_text(html, encoding='utf-8')
+          PY
+      - name: Committer les ajustements
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Teste une UI immersive pour le bloc resultat"
+          file_pattern: index.html ui.css
