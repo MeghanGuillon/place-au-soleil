@@ -1,0 +1,39 @@
+name: Inject Landing Blocks
+
+on:
+  push:
+    paths:
+      - '.github/workflows/inject-landing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject script tag
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+          tag = '<script src="./inject-landing.js?v=202609071405"></script>'
+          if tag not in html:
+              html = html.replace('<script>\nconst $=id=>document.getElementById(id);', tag + '\n<script>\nconst $=id=>document.getElementById(id);')
+          html = html.replace('./ui.css?v=202609071330', './ui.css?v=202609071405')
+          p.write_text(html, encoding='utf-8')
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Injecte les blocs landing sur la page"
+            git push
+          fi
