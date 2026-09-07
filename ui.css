@@ -173,3 +173,14 @@
   .planner-tab .tab-icon{width:19px;height:19px;flex-basis:19px}
   .planner-tab.active:after{left:14px;right:14px}
 }
+
+/* Ajustement onglets — alignement et couleurs */
+:root{--inactive-tab:#efede7;--active-tab:var(--paper)}
+.panel{background:var(--active-tab)!important;border:none!important}
+.planner-tabs{left:3px!important;gap:0!important;filter:drop-shadow(0 -8px 18px rgba(7,45,60,.06))!important}
+.planner-tab{background:var(--inactive-tab)!important;border:0!important;box-shadow:none!important;color:rgba(7,45,60,.58)!important}
+.planner-tab + .planner-tab{margin-left:0!important}
+.planner-tab + .planner-tab:before{display:none!important;content:none!important}
+.planner-tab.active{background:var(--active-tab)!important;color:var(--ink)!important;border:0!important;box-shadow:none!important}
+.planner-tab.active:after{background:var(--ink)!important}
+@media(max-width:850px){.planner-tabs{left:0!important;width:100%!important}}
