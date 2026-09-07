@@ -41,6 +41,21 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     if(text) text.textContent=STATUS_TEXT;
   }
 
+  function isFullDate(value){
+    return /^\d{4}-\d{2}-\d{2}$/.test(value||'');
+  }
+
+  function syncNumberDateToMain(){
+    const input=document.getElementById('number-date');
+    const mainDate=document.getElementById('date');
+    if(!input || !mainDate || !isFullDate(input.value)) return false;
+    if(mainDate.value!==input.value){
+      mainDate.value=input.value;
+      mainDate.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    return true;
+  }
+
   function ensureNumberDate(){
     const row=document.querySelector('#number-search-panel .number-row');
     const button=document.getElementById('number-search-btn');
@@ -54,20 +69,26 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       button.insertAdjacentElement('beforebegin',field);
       input=field.querySelector('input');
     }
-    input.value=mainDate.value;
+    if(!input.value && mainDate.value) input.value=mainDate.value;
     input.min=mainDate.min || '';
     input.max=mainDate.max || '';
     if(!input.dataset.dateHooked){
       input.dataset.dateHooked='true';
       input.addEventListener('input',()=>{
-        mainDate.value=input.value;
-        mainDate.dispatchEvent(new Event('change',{bubbles:true}));
+        clearNumberError();
+        if(isFullDate(input.value)) syncNumberDateToMain();
+      });
+      input.addEventListener('change',()=>{
+        syncNumberDateToMain();
         clearNumberError();
       });
+      input.addEventListener('blur',()=>{
+        if(!input.value && mainDate.value) input.value=mainDate.value;
+      });
       mainDate.addEventListener('change',()=>{
-        input.value=mainDate.value;
         input.min=mainDate.min || '';
         input.max=mainDate.max || '';
+        if(document.activeElement!==input && mainDate.value) input.value=mainDate.value;
         clearNumberError();
       });
     }
@@ -146,6 +167,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
         if(btn.disabled) return;
         if(id==='number-search-btn'){
           ensureNumberDate();
+          syncNumberDateToMain();
           clearNumberError();
         }
         setSearching(true);
