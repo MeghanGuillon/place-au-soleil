@@ -1,0 +1,105 @@
+name: Intégrer l'image hero
+
+on:
+  push:
+    paths:
+      - '.github/workflows/install-hero-image.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer l'image et affiner le hero
+        run: |
+          mkdir -p assets
+          cat .tmp/hero-small1.b64 .tmp/hero-small2.b64 .tmp/hero-small3.b64 | base64 -d > assets/hero-train.webp
+          cat >> ui.css <<'EOF'
+
+          /* Hero V2 — image finale et onglets attachés à la carte */
+          .hero{
+            min-height:720px;
+            overflow:hidden;
+            isolation:isolate;
+            background:url('./assets/hero-train.webp') center 52%/cover no-repeat;
+          }
+          .hero:before{
+            content:"";
+            position:absolute;
+            inset:0;
+            z-index:0;
+            pointer-events:none;
+            background:
+              linear-gradient(90deg,rgba(3,27,39,.90) 0%,rgba(3,27,39,.76) 30%,rgba(3,27,39,.38) 52%,rgba(3,27,39,.08) 76%),
+              linear-gradient(180deg,rgba(3,27,39,.06) 0%,rgba(3,27,39,.08) 60%,rgba(250,247,240,.18) 82%,rgba(250,247,240,.92) 100%);
+          }
+          .hero:after{
+            content:"";
+            position:absolute;
+            left:-3%;
+            right:-3%;
+            bottom:-46px;
+            height:205px;
+            z-index:1;
+            pointer-events:none;
+            background:linear-gradient(180deg,transparent 0%,rgba(250,247,240,.20) 30%,rgba(250,247,240,.80) 70%,var(--sand) 100%);
+            filter:blur(12px);
+            transform:scale(1.04);
+          }
+          .nav,.hero-copy{position:relative;z-index:2}
+          .section{margin:-86px auto 0}
+          .panel{
+            position:relative;
+            padding:34px clamp(18px,2.6vw,30px) 28px;
+            border-radius:0 25px 25px 25px;
+          }
+          .planner-tabs{
+            position:absolute;
+            left:-1px;
+            top:-55px;
+            margin:0;
+            transform:none;
+            gap:0;
+            overflow:visible;
+            align-items:flex-end;
+          }
+          .planner-tab{
+            height:55px;
+            padding:0 28px;
+            border:1px solid #ded9d0;
+            border-bottom:0;
+            border-radius:16px 16px 0 0;
+            background:#efede7;
+            color:#65717a;
+            box-shadow:none;
+            transform:none!important;
+          }
+          .planner-tab + .planner-tab{margin-left:-1px}
+          .planner-tab.active{
+            position:relative;
+            z-index:2;
+            background:var(--paper);
+            color:var(--ink);
+          }
+          .status{margin:0 0 18px}
+          @media(max-width:850px){
+            .hero{min-height:680px;background-position:42% center}
+            .section{margin-top:-70px}
+            .panel{padding-top:32px;border-radius:0 22px 22px 22px}
+            .planner-tabs{top:-52px;width:calc(100% + 2px)}
+            .planner-tab{height:52px;padding:0 16px;font-size:12px;flex:1}
+          }
+          EOF
+          rm -rf .tmp
+
+      - name: Committer l'intégration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A assets ui.css .tmp
+          git commit -m "Intègre l'image hero et recolle les onglets de recherche"
+          git push
