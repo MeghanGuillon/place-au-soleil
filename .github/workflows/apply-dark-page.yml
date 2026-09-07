@@ -1,0 +1,104 @@
+name: Appliquer fond sombre
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-dark-page.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Passer le fond global en bleu nuit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          css_path = Path('ui.css')
+          css = css_path.read_text(encoding='utf-8')
+          marker = '/* Fond page sombre — transition hero */'
+          patch = r'''
+
+/* Fond page sombre — transition hero */
+:root{
+  --deep:#072d3c;
+  --deep-2:#041f2b;
+}
+html,
+body{
+  background:#072d3c!important;
+}
+body{
+  color:#fff!important;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 80% 18%,rgba(255,200,61,.10),transparent 26%),
+    linear-gradient(180deg,#072d3c 0%,#041f2b 64%,#072d3c 100%)!important;
+}
+.hero:before{
+  background:
+    linear-gradient(90deg,rgba(3,27,39,.95) 0%,rgba(3,27,39,.82) 31%,rgba(3,27,39,.46) 55%,rgba(3,27,39,.14) 78%),
+    linear-gradient(180deg,rgba(3,27,39,.04) 0%,rgba(3,27,39,.12) 54%,rgba(7,45,60,.62) 82%,#072d3c 100%)!important;
+}
+.hero:after{
+  left:-10%!important;
+  right:-10%!important;
+  bottom:-120px!important;
+  height:390px!important;
+  background:
+    radial-gradient(ellipse at center,rgba(7,45,60,.92) 0%,rgba(7,45,60,.72) 46%,rgba(7,45,60,0) 76%),
+    linear-gradient(180deg,rgba(7,45,60,0) 0%,rgba(7,45,60,.42) 28%,rgba(7,45,60,.88) 62%,#072d3c 100%)!important;
+  filter:blur(34px)!important;
+}
+.section{
+  background:transparent!important;
+}
+.section:before{
+  top:-190px!important;
+  height:250px!important;
+  background:linear-gradient(180deg,rgba(7,45,60,0),rgba(7,45,60,.72) 48%,#072d3c 88%)!important;
+  filter:blur(34px)!important;
+}
+.panel{
+  box-shadow:0 28px 80px rgba(0,0,0,.24)!important;
+}
+#results{
+  box-shadow:0 30px 90px rgba(0,0,0,.28)!important;
+}
+footer{
+  background:#072d3c!important;
+  color:rgba(255,255,255,.56)!important;
+}
+@media(max-width:850px){
+  .hero:after{bottom:-120px!important;height:360px!important;filter:blur(30px)!important}
+  .section:before{top:-150px!important;height:210px!important}
+}
+'''
+          if marker in css:
+              css = css[:css.index(marker)].rstrip() + patch
+          else:
+              css = css.rstrip() + patch
+          css_path.write_text(css, encoding='utf-8')
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+          html = re.sub(r'\.\/ui\.css(?:\?v=\d+)?', './ui.css?v=202609071315', html)
+          index_path.write_text(html, encoding='utf-8')
+          PY
+      - name: Committer les ajustements
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ui.css index.html
+          if git diff --cached --quiet; then
+            echo "Aucun changement à committer"
+          else
+            git commit -m "Passe le site sur un fond bleu nuit"
+            git push
+          fi
