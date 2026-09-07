@@ -18,6 +18,13 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     const style=document.createElement('style');
     style.id='number-search-overrides';
     style.textContent=`
+      .hero{background:url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
+      .hero-video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 52%!important;z-index:0!important;pointer-events:none!important;background:url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
+      .hero:before{z-index:1!important}
+      .hero:after{z-index:2!important}
+      .hero .nav{z-index:5!important}
+      .hero .hero-copy{z-index:6!important}
+      @media(prefers-reduced-motion:reduce){.hero-video{display:none!important}}
       .number-search-title{color:#a77500!important;font-weight:800!important}
       #number-search-panel .hint{color:#586b78!important}
       #number-search-panel .number-row{grid-template-columns:minmax(180px,320px) minmax(150px,220px) auto!important;align-items:end!important}
@@ -31,9 +38,28 @@ fetch('./landing-blocks.html',{cache:'no-store'})
         .hero h1 .highlight:hover{color:#fff!important}
         .hero h1 .highlight:hover:before{transform:scaleX(1)!important}
       }
-      @media(max-width:850px){#number-search-panel .number-row{grid-template-columns:1fr!important}}
+      @media(max-width:850px){#number-search-panel .number-row{grid-template-columns:1fr!important}.hero-video{object-position:center 52%!important}}
     `;
     document.head.appendChild(style);
+  }
+
+  function ensureHeroVideo(){
+    const hero=document.querySelector('.hero');
+    if(!hero || hero.querySelector('.hero-video')) return;
+    const video=document.createElement('video');
+    video.className='hero-video';
+    video.autoplay=true;
+    video.muted=true;
+    video.loop=true;
+    video.playsInline=true;
+    video.preload='auto';
+    video.poster='./assets/hero-train.webp';
+    video.setAttribute('aria-hidden','true');
+    video.innerHTML='<source src="./assets/place-au-soleil-video-hero.mp4" type="video/mp4">';
+    hero.insertBefore(video,hero.firstChild);
+    const play=()=>video.play().catch(()=>{});
+    play();
+    window.setTimeout(play,600);
   }
 
   function friendlyStatus(){
@@ -150,6 +176,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 
   function boot(){
     injectSearchStyles();
+    ensureHeroVideo();
     friendlyStatus();
     ensureNumberDate();
     ensureNumberFeedback();
