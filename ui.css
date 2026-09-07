@@ -76,3 +76,107 @@
   .planner-tabs{top:-52px;width:calc(100% + 2px)}
   .planner-tab{height:52px;padding:0 16px;font-size:12px;flex:1}
 }
+
+/* Ajustements DA hero — onglets maquette + fondu bas */
+.hero:before{
+  background:
+    linear-gradient(90deg,rgba(3,27,39,.93) 0%,rgba(3,27,39,.79) 30%,rgba(3,27,39,.42) 54%,rgba(3,27,39,.10) 78%),
+    linear-gradient(180deg,rgba(3,27,39,.03) 0%,rgba(3,27,39,.08) 56%,rgba(250,247,240,.30) 78%,rgba(250,247,240,.98) 100%);
+}
+.hero:after{
+  left:-8%;
+  right:-8%;
+  bottom:-95px;
+  height:320px;
+  z-index:1;
+  background:
+    radial-gradient(ellipse at center,rgba(250,247,240,.88) 0%,rgba(250,247,240,.72) 44%,rgba(250,247,240,0) 72%),
+    linear-gradient(180deg,rgba(250,247,240,0) 0%,rgba(250,247,240,.44) 30%,rgba(250,247,240,.92) 62%,v(ar--sand) 100%);
+  filter:blur(28px);
+  transform:scale(1.08);
+}
+.section:before{
+  content:"";
+  position:absolute;
+  left:-6vw;
+  right:-6vw;
+  top:-155px;
+  height:190px;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(250,247,240,0),rgba(250,247,240,.92) 58%,var(--sand));
+  filter:blur(22px);
+}
+.panel{
+  border-radius:0 26px 26px 26px;
+  border-top-left-radius:0;
+}
+.planner-tabs{
+  top:-58px;
+  height:58px;
+  filter:drop-shadow(0 -8px 18px rgba(7,45,60,.10));
+}
+.planner-tab{
+  height:58px;
+  min-width:240px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:0 29px;
+  border:1px solid rgba(7,45,60,.12);
+  border-bottom:1px solid rgba(7,45,60,.12);
+  border-radius:16px 16px 0 0;
+  background:rgba(239,236,228,.92);
+  color:rgba(7,45,60,.62);
+  font-size:14px;
+  line-height:1;
+  position:relative;
+}
+.planner-tab + .planner-tab{
+  margin-left:0;
+  border-left:0;
+}
+.planner-tab + .planner-tab:before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:13px;
+  bottom:13px;
+  width:1px;
+  background:rgba(7,45,60,.20);
+}
+.planner-tab.active{
+  background:var(--paper);
+  color:var(--ink);
+  border-bottom-color:var(--paper);
+}
+.planner-tab.active:after{
+  content:"";
+  position:absolute;
+  left:22px;
+  right:22px;
+  bottom:0;
+  height:3px;
+  border-radius:99px 99px 0 0;
+  background:var(--ink);
+}
+.planner-tab .tab-icon{
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.planner-tab.active .tab-icon{color:var(--ink)}
+@media(max-width:850px){
+  .hero:after{bottom:-96px;height:300px;filter:blur(24px)}
+  .section:before{top:-130px;height:160px}
+  .planner-tabs{top:-54px;height:54px;width:calc(100% + 2px)}
+  .planner-tab{height:54px;min-width:0;gap:9px;padding:0 12px;font-size:12px}
+  .planner-tab .tab-icon{width:19px;height:19px;flex-basis:19px}
+  .planner-tab.active:after{left:14px;right:14px}
+}
