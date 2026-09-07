@@ -1,34 +1,65 @@
 <style>
-.landing-stack,.reassurance-section,.journey-recap-block,.faq-section{max-width:1240px;margin:0 auto;padding:92px clamp(18px,5vw,72px);color:#fff}.landing-kicker{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#ffc83d;margin-bottom:18px}.landing-title-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(260px,.7fr);gap:36px;align-items:end;margin-bottom:30px}.landing-title-row h2,.reassurance-card h2,.journey-recap-block h2,.faq-section h2{font-size:clamp(34px,4.2vw,58px);line-height:.98;letter-spacing:-.06em;margin:0;color:#fff}.landing-title-row p,.reassurance-card p,.process-card p,.journey-recap-block p,.faq-grid p{color:rgba(255,255,255,.70);line-height:1.65;margin:0}.process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.process-card,.reassurance-card,.journey-recap-block,.faq-grid details{background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.10);border-radius:24px;box-shadow:0 24px 60px rgba(0,0,0,.18);backdrop-filter:blur(12px)}.process-card{min-height:250px;padding:28px;display:flex;flex-direction:column;justify-content:space-between}.process-card span{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(255,200,61,.16);color:#ffc83d;font-weight:800}.process-card h3,.reassurance-card h3{font-size:23px;line-height:1.08;margin:34px 0 12px;color:#fff;letter-spacing:-.035em}.reassurance-section{display:grid;grid-template-columns:1.1fr repeat(3,.62fr);gap:16px;padding-top:24px}.reassurance-card{padding:28px;min-height:250px}.reassurance-card.main{background:linear-gradient(145deg,rgba(255,200,61,.18),rgba(255,255,255,.06));grid-row:span 1}.reassurance-card.main p{font-size:17px;margin-top:20px}.journey-recap-block{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1fr);gap:34px;align-items:start;margin-top:8px;padding-top:60px;padding-bottom:60px;background:linear-gradient(135deg,rgba(255,253,250,.98),rgba(242,239,229,.96));color:#072d3c;border-radius:32px;box-shadow:0 30px 90px rgba(0,0,0,.24)}.journey-recap-block .landing-kicker{color:#b47d00}.journey-recap-block h2{color:#072d3c}.journey-recap-block p{color:#4b5d66}.recap-list{display:grid;gap:18px}.recap-list p{padding:20px 22px;background:#fff;border-radius:20px;border:1px solid #e8e2d8}.recap-list strong{display:block;color:#072d3c;margin-bottom:5px}.faq-section{padding-top:92px}.faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.faq-grid details{padding:22px 24px}.faq-grid summary{cursor:pointer;font-weight:800;color:#fff;letter-spacing:-.015em}.faq-grid p{margin-top:14px}footer{margin-top:40px!important}@media(max-width:950px){.landing-title-row,.reassurance-section,.journey-recap-block,.faq-grid{grid-template-columns:1fr}.process-grid{grid-template-columns:1fr}.landing-stack,.reassurance-section,.journey-recap-block,.faq-section{padding:62px 18px}.journey-recap-block{border-radius:26px;margin-inline:14px}.process-card,.reassurance-card{min-height:0}.process-card h3,.reassurance-card h3{margin-top:24px}}
+.landing-benefits,.landing-faq{max-width:1240px;margin:0 auto;color:#fff}.landing-benefits{padding:86px clamp(18px,5vw,72px) 14px}.benefits-shell{background:linear-gradient(135deg,#fffefa 0%,#f6f1e8 100%);border:1px solid rgba(255,255,255,.76);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.18);padding:26px clamp(22px,3vw,34px) 28px;color:#072d3c}.benefits-kicker{font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#60717d;margin-bottom:22px}.benefits-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}.benefit-item{display:grid;justify-items:center;text-align:center;padding:4px clamp(16px,2.2vw,30px);position:relative}.benefit-item+.benefit-item{border-left:1px solid rgba(7,45,60,.13)}.benefit-icon{width:34px;height:34px;margin-bottom:16px;color:#072d3c;display:grid;place-items:center}.benefit-icon svg{width:34px;height:34px;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.benefit-icon .fill{fill:currentColor;stroke:none}.benefit-item h3{font-size:15px;line-height:1.25;margin:0 0 5px;font-weight:800;letter-spacing:-.025em;color:#102c3d}.benefit-item p{font-size:14px;line-height:1.45;margin:0;color:#6b7682;max-width:210px}.landing-faq{padding:0 clamp(18px,5vw,72px) 82px}.faq-shell{display:grid;grid-template-columns:minmax(260px,.82fr) minmax(420px,1.25fr);gap:44px;align-items:start;position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(135deg,#173c4d 0%,#0d3143 45%,#072d3c 100%);border:1px solid rgba(255,255,255,.12);box-shadow:0 28px 80px rgba(0,0,0,.24);padding:34px clamp(28px,4vw,42px)}.faq-shell:after{content:"";position:absolute;right:-80px;top:-110px;width:410px;height:410px;background:radial-gradient(circle at 36% 35%,rgba(255,255,255,.16),transparent 34%),radial-gradient(circle at 68% 72%,rgba(255,255,255,.08),transparent 42%);border-radius:46% 54% 58% 42%;transform:rotate(-18deg);opacity:.7;pointer-events:none}.faq-intro,.faq-list{position:relative;z-index:1}.faq-kicker{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-bottom:28px}.faq-intro h2{font-size:clamp(32px,3.5vw,46px);line-height:1.03;letter-spacing:-.055em;margin:0;color:#fff}.faq-list{display:grid;gap:0}.faq-list details{border-top:1px solid rgba(255,255,255,.18);padding:0}.faq-list details:last-child{border-bottom:1px solid rgba(255,255,255,.18)}.faq-list summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:17px 0;color:rgba(255,255,255,.92);font-weight:800;font-size:15px;letter-spacing:-.018em}.faq-list summary::-webkit-details-marker{display:none}.faq-list summary:after{content:"⌄";font-size:20px;line-height:1;color:rgba(255,255,255,.78);transition:transform .2s}.faq-list details[open] summary:after{transform:rotate(180deg)}.faq-list p{margin:0;padding:0 34px 18px 0;color:rgba(255,255,255,.68);line-height:1.55;font-size:14px}.landing-note{max-width:1240px;margin:0 auto;padding:0 clamp(18px,5vw,72px) 82px}.note-shell{display:grid;grid-template-columns:minmax(260px,.75fr) minmax(0,1fr);gap:34px;align-items:start;background:linear-gradient(135deg,rgba(255,253,250,.98),rgba(242,239,229,.96));color:#072d3c;border-radius:28px;padding:32px clamp(24px,4vw,42px);box-shadow:0 30px 90px rgba(0,0,0,.20)}.note-kicker{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#a77500;margin-bottom:14px}.note-shell h2{margin:0;font-size:clamp(28px,3.2vw,42px);line-height:1.02;letter-spacing:-.055em}.note-list{display:grid;gap:14px}.note-list p{margin:0;color:#4b5d66;line-height:1.55}.note-list strong{display:block;color:#072d3c;margin-bottom:4px}footer{margin-top:0!important}@media(max-width:950px){.landing-benefits{padding-top:64px}.benefits-grid,.faq-shell,.note-shell{grid-template-columns:1fr}.benefit-item{padding:22px 8px}.benefit-item+.benefit-item{border-left:0;border-top:1px solid rgba(7,45,60,.13)}.faq-shell{gap:26px;padding:30px 24px}.faq-shell:after{right:-180px;top:-140px}.landing-faq{padding-bottom:52px}.landing-note{padding-bottom:58px}}
 </style>
-<section class="landing-stack" id="how">
-  <div class="landing-kicker">Comment ça marche ?</div>
-  <div class="landing-title-row">
-    <h2>Une recommandation simple, derrière un calcul très précis.</h2>
-    <p>Place au Soleil transforme ton trajet en lecture de lumière : horaires, gares, tracés ferroviaires et position du soleil sont croisés pour te dire de quel côté t’asseoir.</p>
+<section class="landing-benefits" id="how">
+  <div class="benefits-shell">
+    <div class="benefits-kicker">Pourquoi utiliser Place au Soleil ?</div>
+    <div class="benefits-grid">
+      <article class="benefit-item">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 16 0Z"></path><path d="M12 4v16"></path><path d="M12 20c0 1.4 1 2 2 2s2-.7 2-2"></path></svg></div>
+        <h3>Voyagez plus confortablement</h3>
+        <p>Évitez l’éblouissement et la chaleur.</p>
+      </article>
+      <article class="benefit-item">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19C16 19 20 9 20 4c-8 0-15 4-15 15Z"></path><path d="M9 15c2.8-2.8 5.7-5 10-7"></path></svg></div>
+        <h3>Profitez du paysage</h3>
+        <p>Admirez les paysages sans plisser les yeux.</p>
+      </article>
+      <article class="benefit-item">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg></div>
+        <h3>Simple et rapide</h3>
+        <p>Une réponse en quelques secondes.</p>
+      </article>
+      <article class="benefit-item">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="fill" d="M12 21s-7-4.35-9.35-8.5C.75 9.15 2.55 5 6.25 5c2.1 0 3.45 1.18 4.15 2.14C11.1 6.18 12.45 5 14.55 5c3.7 0 5.5 4.15 3.6 7.5C15.8 16.65 12 21 12 21Z"></path></svg></div>
+        <h3>Pensé par des voyageurs</h3>
+        <p>Un outil gratuit, créé par amour des trains et des siestes.</p>
+      </article>
+    </div>
   </div>
-  <div class="process-grid">
-    <article class="process-card"><span>01</span><h3>Indique ton voyage</h3><p>Choisis tes gares, ta date, puis le train qui correspond à ton horaire.</p></article>
-    <article class="process-card"><span>02</span><h3>On suit les rails</h3><p>Le trajet est découpé virage par virage pour comprendre comment la rame s’oriente.</p></article>
-    <article class="process-card"><span>03</span><h3>On choisit le bon côté</h3><p>Le résultat résume le côté à privilégier pour éviter l’exposition directe.</p></article>
+</section>
+<section class="landing-faq" id="faq">
+  <div class="faq-shell">
+    <div class="faq-intro">
+      <div class="faq-kicker">FAQ</div>
+      <h2>Vos questions,<br>nos réponses.</h2>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>Les résultats sont-ils fiables ?</summary>
+        <p>Le calcul croise les horaires théoriques, les gares desservies, les tracés ferroviaires disponibles et la position du soleil. Il reste une aide à la décision, pas une garantie absolue.</p>
+      </details>
+      <details>
+        <summary>Est-ce que ça fonctionne pour tous les trains ?</summary>
+        <p>Le site fonctionne avec les trains présents dans l’index national SNCF chargé sur le projet. Certaines liaisons peuvent manquer selon les données disponibles.</p>
+      </details>
+      <details>
+        <summary>D’où viennent les données ?</summary>
+        <p>Les horaires viennent de SNCF Open Data. Quand c’est possible, le trajet utilise aussi les tracés du Réseau Ferré National.</p>
+      </details>
+      <details>
+        <summary>Puis-je utiliser ce service sur mobile ?</summary>
+        <p>Oui, l’interface est prévue pour fonctionner sur mobile. On ajustera encore les détails responsive au fil des prochaines passes UI.</p>
+      </details>
+    </div>
   </div>
 </section>
-<section class="reassurance-section" id="about">
-  <article class="reassurance-card main"><div class="landing-kicker">Pourquoi c’est fiable</div><h2>Pas une intuition : un calcul de trajet.</h2><p>On utilise les horaires théoriques SNCF Open Data, les gares réellement desservies et les tracés RFN disponibles pour rapprocher le calcul du parcours ferroviaire réel.</p></article>
-  <article class="reassurance-card"><h3>Tracé réel quand disponible</h3><p>Lorsque le tronçon RFN est présent, l’exposition est calculée sur le tracé des rails, pas sur une simple ligne droite.</p></article>
-  <article class="reassurance-card"><h3>Changements de sens</h3><p>Si un rebroussement est détecté, le calcul suit le côté physique choisi au départ.</p></article>
-  <article class="reassurance-card"><h3>Résultat lisible</h3><p>La recommandation reste volontairement simple : côté droit, côté gauche ou peu importe.</p></article>
-</section>
-<section class="journey-recap-block">
-  <div><div class="landing-kicker">À savoir avant de réserver</div><h2>Le bon côté, mais pas encore le numéro de siège.</h2></div>
-  <div class="recap-list"><p><strong>Le calcul indique un côté de rame.</strong> Selon le train, pense ensuite à vérifier le sens de marche, la disposition des voitures et les places solo/duo au moment de réserver.</p><p><strong>Les données ne sont pas du temps réel.</strong> En cas de retard, changement de voie ou composition différente, le résultat reste une aide à la décision.</p></div>
-</section>
-<section class="faq-section" id="faq">
-  <div class="landing-title-row"><div><div class="landing-kicker">FAQ</div><h2>Les petites questions avant de monter à bord.</h2></div></div>
-  <div class="faq-grid">
-    <details open><summary>Est-ce que ça marche pour tous les trains ?</summary><p>Le site fonctionne avec les trains présents dans l’index national SNCF chargé sur le projet. Certaines liaisons peuvent manquer selon les données disponibles.</p></details>
-    <details><summary>Pourquoi certains trajets sont approximatifs ?</summary><p>Quand le tracé RFN d’un tronçon n’est pas disponible, le site utilise une approximation entre les gares pour ne pas bloquer le calcul.</p></details>
-    <details><summary>Et si le train change de sens ?</summary><p>Le site détecte les changements de direction marqués et adapte la lecture gauche/droite pour suivre le côté physique choisi au départ.</p></details>
-    <details><summary>Les horaires sont-ils en temps réel ?</summary><p>Non. Le calcul repose sur les horaires théoriques publiés en open data, pas sur les retards ou modifications de dernière minute.</p></details>
+<section class="landing-note" id="about">
+  <div class="note-shell">
+    <div><div class="note-kicker">À savoir avant de réserver</div><h2>Le bon côté, mais pas encore le numéro de siège.</h2></div>
+    <div class="note-list">
+      <p><strong>Le calcul indique un côté de rame.</strong> Selon le train, pense ensuite à vérifier le sens de marche, la disposition des voitures et les places solo/duo au moment de réserver.</p>
+      <p><strong>Les données ne sont pas du temps réel.</strong> En cas de retard, changement de voie ou composition différente, le résultat reste une aide à la décision.</p>
+    </div>
   </div>
 </section>
