@@ -12,11 +12,15 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   const STATUS_TEXT='On suit les rails à la trace pour ne rien laisser passer, même pas un rayon de soleil.';
   const DEFAULT_HELPER='Choisis d’abord une gare de départ, ou entre directement ton numéro de train.';
   const HERO_VIDEO='./assets/place-au-soleil-video-hero.mp4?v=202609071633';
-  const FRANCE_GEOJSON='./assets/metropole.geojson?v=202609072220';
+  const MAP_SOURCES=[
+    './assets/departements-version-simplifiee.geojson?v=202609072245',
+    'https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson',
+    './assets/metropole.geojson?v=202609072245'
+  ];
   const doneWords=['train(s) direct(s) trouvé(s)','train(s) à venir trouvé(s)','Train ','Pas de données','Aucune donnée','Aucune destination','Choisis'];
   let observerReady=false;
-  let franceMap=null;
-  let franceMapLoading=null;
+  let mapData=null;
+  let mapLoading=null;
 
   function $(id){return document.getElementById(id)}
 
@@ -76,79 +80,65 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     video.muted=true;video.defaultMuted=true;const play=()=>video.play().catch(()=>{});video.load();play();window.setTimeout(play,300);window.setTimeout(play,1000);
   }
 
-  function collectGeoLines(geojson){
-    const lines=[];
-    function pushRing(ring){
-      if(!ring || ring.length<2)return;
-      const max=620,step=Math.max(1,Math.ceil(ring.length/max));
-      const line=[];
-      for(let i=0;i<ring.length;i+=step){const p=ring[i];if(Array.isArray(p)&&p.length>=2)line.push({lon:+p[0],lat:+p[1]})}
-      const last=ring[ring.length-1];if(last&&line.length&& (line[line.length-1].lon!==+last[0] || line[line.length-1].lat!==+last[1])) line.push({lon:+last[0],lat:+last[1]});
-      if(line.length>1)lines.push(line);
+  function collectFeatureLines(geojson){
+    const features=[];
+    function bounds(lines){let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;lines.forEach(line=>line.forEach(p=>{if(p.lon<minLon)minLon=p.lon;if(p.lon>maxLon)maxLon=p.lon;if(p.lat<minLat)minLat=p.lat;if(p.lat>maxLat)maxLat=p.lat}));return{minLon,maxLon,minLat,maxLat}}
+    function pushFeature(rawLines,properties={}){const lines=[];rawLines.forEach(ring=>{if(!ring || ring.length<2)return;const max=520,step=Math.max(1,Math.ceil(ring.length/max)),line=[];for(let i=0;i<ring.length;i+=step){const p=ring[i];if(Array.isArray(p)&&p.length>=2)line.push({lon:+p[0],lat:+p[1]})}const last=ring[ring.length-1];if(last&&line.length&&(line[line.length-1].lon!==+last[0]||line[line.length-1].lat!==+last[1]))line.push({lon:+last[0],lat:+last[1]});if(line.length>1)lines.push(line)});if(lines.length)features.push({lines,bounds:bounds(lines),properties})}
+    function geom(g,props={}){if(!g)return;if(g.type==='Polygon')pushFeature(g.coordinates,props);else if(g.type==='MultiPolygon')g.coordinates.forEach(poly=>pushFeature(poly,props));else if(g.type==='LineString')pushFeature([g.coordinates],props);else if(g.type==='MultiLineString')pushFeature(g.coordinates,props)}
+    if(geojson.type==='FeatureCollection')geojson.features.forEach(f=>geom(f.geometry,f.properties||{}));else if(geojson.type==='Feature')geom(geojson.geometry,geojson.properties||{});else geom(geojson,{});
+    return features;
+  }
+
+  function loadMapData(){
+    if(mapData)return Promise.resolve(mapData);
+    if(!mapLoading){
+      mapLoading=(async()=>{
+        for(const src of MAP_SOURCES){
+          try{const r=await fetch(src,{cache:'force-cache'});if(!r.ok)continue;const json=await r.json();const features=collectFeatureLines(json);if(features.length){mapData={features,source:src};return mapData}}
+          catch(e){}
+        }
+        return null;
+      })();
     }
-    function geom(g){
-      if(!g)return;
-      if(g.type==='Polygon')g.coordinates.forEach(pushRing);
-      else if(g.type==='MultiPolygon')g.coordinates.forEach(poly=>poly.forEach(pushRing));
-      else if(g.type==='LineString')pushRing(g.coordinates);
-      else if(g.type==='MultiLineString')g.coordinates.forEach(pushRing);
-    }
-    if(geojson.type==='FeatureCollection')geojson.features.forEach(f=>geom(f.geometry));
-    else if(geojson.type==='Feature')geom(geojson.geometry);
-    else geom(geojson);
-    return lines;
+    return mapLoading;
   }
 
-  function boundsOf(lines){
-    let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
-    lines.forEach(line=>line.forEach(p=>{if(p.lon<minLon)minLon=p.lon;if(p.lon>maxLon)maxLon=p.lon;if(p.lat<minLat)minLat=p.lat;if(p.lat>maxLat)maxLat=p.lat}));
-    return {minLon,maxLon,minLat,maxLat};
-  }
-
-  function loadFranceMap(){
-    if(franceMap)return Promise.resolve(franceMap);
-    if(!franceMapLoading){
-      franceMapLoading=fetch(FRANCE_GEOJSON,{cache:'force-cache'}).then(r=>r.ok?r.json():null).then(json=>{
-        if(!json)return null;
-        const lines=collectGeoLines(json),bounds=boundsOf(lines);
-        franceMap={lines,bounds};return franceMap;
-      }).catch(()=>null);
-    }
-    return franceMapLoading;
-  }
-
-  function projectorForBounds(bounds,width=1000,height=430,padX=86,padY=38){
-    const dx=Math.max(.001,bounds.maxLon-bounds.minLon),dy=Math.max(.001,bounds.maxLat-bounds.minLat),scale=Math.min((width-padX*2)/dx,(height-padY*2)/dy),cx=(bounds.minLon+bounds.maxLon)/2,cy=(bounds.minLat+bounds.maxLat)/2;
-    return p=>[width/2+(p.lon-cx)*scale,height/2-(p.lat-cy)*scale];
-  }
-
-  function drawFranceWatermark(svg,pr){
-    if(!franceMap?.lines?.length || typeof svgEl!=='function')return;
-    const group=svgEl('g',{id:'france-watermark','aria-hidden':'true',opacity:.72});
-    const glow=svgEl('path',{fill:'none',stroke:'#9ec3d4','stroke-width':5,'stroke-linejoin':'round','stroke-linecap':'round',opacity:.035});
-    const stroke=svgEl('path',{fill:'rgba(255,255,255,.018)',stroke:'#d9f5ff','stroke-width':1.05,'stroke-linejoin':'round','stroke-linecap':'round',opacity:.16});
-    let d='';
-    franceMap.lines.forEach(line=>{line.forEach((p,i)=>{const [x,y]=pr(p);d+=(i?'L':'M')+x.toFixed(1)+','+y.toFixed(1)});d+='Z'});
-    glow.setAttribute('d',d);stroke.setAttribute('d',d);group.append(glow,stroke);svg.appendChild(group);
-  }
-
-  function routeBounds(pts){
+  function expandedRouteBounds(pts){
     let minLon=Math.min(...pts.map(p=>p.lon)),maxLon=Math.max(...pts.map(p=>p.lon)),minLat=Math.min(...pts.map(p=>p.lat)),maxLat=Math.max(...pts.map(p=>p.lat));
-    return {minLon,maxLon,minLat,maxLat};
+    let dx=Math.max(.08,maxLon-minLon),dy=Math.max(.08,maxLat-minLat),padLon=Math.max(.28,dx*.55),padLat=Math.max(.22,dy*.55);
+    let b={minLon:minLon-padLon,maxLon:maxLon+padLon,minLat:minLat-padLat,maxLat:maxLat+padLat};
+    const minDx=1.1,minDy=.85;
+    if(b.maxLon-b.minLon<minDx){const c=(b.minLon+b.maxLon)/2;b.minLon=c-minDx/2;b.maxLon=c+minDx/2}
+    if(b.maxLat-b.minLat<minDy){const c=(b.minLat+b.maxLat)/2;b.minLat=c-minDy/2;b.maxLat=c+minDy/2}
+    return b;
   }
 
-  function installFranceMapAnimation(){
-    loadFranceMap();
-    if(window.__franceMapAnimationInstalled)return;
+  function intersects(a,b){return !(a.maxLon<b.minLon||a.minLon>b.maxLon||a.maxLat<b.minLat||a.minLat>b.maxLat)}
+  function projectorForBounds(bounds,width=1000,height=430,padX=42,padY=34){const dx=Math.max(.001,bounds.maxLon-bounds.minLon),dy=Math.max(.001,bounds.maxLat-bounds.minLat),scale=Math.min((width-padX*2)/dx,(height-padY*2)/dy),cx=(bounds.minLon+bounds.maxLon)/2,cy=(bounds.minLat+bounds.maxLat)/2;return p=>[width/2+(p.lon-cx)*scale,height/2-(p.lat-cy)*scale]}
+
+  function drawLocalMapWatermark(svg,pr,localBounds){
+    if(!mapData?.features?.length || typeof svgEl!=='function')return;
+    const selected=mapData.features.filter(f=>intersects(f.bounds,localBounds)).slice(0,18);
+    if(!selected.length)return;
+    const group=svgEl('g',{id:'local-map-watermark','aria-hidden':'true'});
+    const d=selected.flatMap(f=>f.lines).map(line=>line.map((p,i)=>{const [x,y]=pr(p);return `${i?'L':'M'}${x.toFixed(1)},${y.toFixed(1)}`}).join(' ')+'Z').join(' ');
+    const halo=svgEl('path',{d,fill:'none',stroke:'#d9f5ff','stroke-width':7,'stroke-linejoin':'round','stroke-linecap':'round',opacity:.035});
+    const fill=svgEl('path',{d,fill:'rgba(255,255,255,.022)',stroke:'#d9f5ff','stroke-width':1.35,'stroke-linejoin':'round','stroke-linecap':'round',opacity:.24});
+    group.append(halo,fill);svg.appendChild(group);
+  }
+
+  function installMapAnimation(){
+    loadMapData();
+    if(window.__localMapAnimationInstalled)return;
     if(typeof drawAnimated!=='function' || typeof svgEl!=='function')return;
-    window.__franceMapAnimationInstalled=true;
+    window.__localMapAnimationInstalled=true;
     drawAnimated=function(segs){
       stopAnimation();
       let svg=$('route-svg'),pts=segs.flatMap(s=>[s.start,s.end]);
       svg.innerHTML='';
       if(pts.length<2)return;
-      let pr=franceMap?.bounds?projectorForBounds(franceMap.bounds,1000,430,78,36):projectorForBounds(routeBounds(pts),1000,430,72,66);
-      if(franceMap?.lines?.length)drawFranceWatermark(svg,pr);
+      const localBounds=expandedRouteBounds(pts),pr=projectorForBounds(localBounds,1000,430,50,42);
+      drawLocalMapWatermark(svg,pr,localBounds);
       let defs=svgEl('defs'),glow=svgEl('filter',{id:'routeGlow',x:'-50%',y:'-50%',width:'200%',height:'200%'}),blur=svgEl('feGaussianBlur',{stdDeviation:'7',result:'b'});glow.appendChild(blur);
       let sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'18'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
       let pathParts=[];segs.forEach((s,i)=>{let a=pr(s.start),b=pr(s.end);if(!i)pathParts.push(`M${a[0]},${a[1]}`);pathParts.push(`L${b[0]},${b[1]}`)});
@@ -174,7 +164,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function setSearching(active){const panel=document.querySelector('#planner .panel'),status=$('status');panel?.classList.toggle('is-searching',active);status?.classList.toggle('is-searching',active);friendlyStatus()}
 
   function boot(){
-    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installFranceMapAnimation();
+    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installMapAnimation();
     const plannerFoot=document.querySelector('.planner-foot');if(plannerFoot)plannerFoot.style.display='none';
     const hint=document.querySelector('#number-search-panel > .hint');if(hint)hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
     const trainInput=$('train-number');if(trainInput&&!trainInput.dataset.errorHooked){trainInput.dataset.errorHooked='true';trainInput.addEventListener('input',clearNumberError)}
@@ -183,5 +173,5 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installFranceMapAnimation,1800)});
+  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installMapAnimation,1800)});
 })();
