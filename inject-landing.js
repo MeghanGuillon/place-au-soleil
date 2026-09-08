@@ -14,6 +14,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   const HERO_VIDEO='./assets/place-au-soleil-video-hero.mp4?v=202609071633';
   const doneWords=['train(s) direct(s) trouvé(s)','train(s) à venir trouvé(s)','Train ','Pas de données','Aucune donnée','Aucune destination','Choisis'];
   let observerReady=false;
+  let tripObserverReady=false;
 
   function $(id){return document.getElementById(id)}
 
@@ -138,18 +139,19 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function parisNowParts(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).reduce((acc,p)=>(acc[p.type]=p.value,acc),{});return{date:`${parts.year}-${parts.month}-${parts.day}`,minutes:Number(parts.hour)*60+Number(parts.minute)}}
   function optionDepartureMinutes(option){const text=option?.textContent||'',match=text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\s*→/);if(!match)return null;return Number(match[1])*60+Number(match[2])}
   function filterUpcomingTrains(){const date=$('date')?.value,trip=$('trip'),trainbox=$('trainbox'),helper=$('helper');if(!date||!trip||!trainbox||!helper||!trip.options.length)return false;const now=parisNowParts();if(date!==now.date)return false;const before=trip.options.length;Array.from(trip.options).forEach(option=>{const dep=optionDepartureMinutes(option);if(dep!==null&&dep<now.minutes)option.remove()});if(before===trip.options.length)return false;if(!trip.options.length){trainbox.style.display='none';helper.textContent='Aucun train à venir trouvé pour aujourd’hui sur ce trajet.';setSearching(false);return true}trip.value=trip.options[0].value;helper.textContent=`${trip.options.length} train(s) à venir trouvé(s) pour aujourd’hui.`;return true}
-  function scheduleUpcomingFilter(){[120,320,700,1200].forEach(delay=>window.setTimeout(filterUpcomingTrains,delay))}
+  function scheduleUpcomingFilter(){[0,60,120,320,700,1200,2200,4000].forEach(delay=>window.setTimeout(filterUpcomingTrains,delay))}
+  function watchTripOptions(){const trip=$('trip');if(!trip||tripObserverReady)return;tripObserverReady=true;new MutationObserver(()=>scheduleUpcomingFilter()).observe(trip,{childList:true,subtree:false});trip.addEventListener('change',()=>window.setTimeout(filterUpcomingTrains,0));scheduleUpcomingFilter()}
   function setSearching(active){const panel=document.querySelector('#planner .panel'),status=$('status');panel?.classList.toggle('is-searching',active);status?.classList.toggle('is-searching',active);friendlyStatus()}
 
   function boot(){
-    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();
+    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();watchTripOptions();
     const plannerFoot=document.querySelector('.planner-foot');if(plannerFoot)plannerFoot.style.display='none';
     const hint=document.querySelector('#number-search-panel > .hint');if(hint)hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
     const trainInput=$('train-number');if(trainInput&&!trainInput.dataset.errorHooked){trainInput.dataset.errorHooked='true';trainInput.addEventListener('input',clearNumberError)}
     ['search','number-search-btn'].forEach(id=>{const btn=$(id);if(!btn||btn.dataset.statusHooked)return;btn.dataset.statusHooked='true';btn.addEventListener('click',()=>{if(btn.disabled)return;if(id==='number-search-btn'){ensureNumberDate();syncNumberDateToMain();clearNumberError()}setSearching(true);scheduleUpcomingFilter();window.setTimeout(()=>setSearching(false),10000)})});
-    const helper=$('helper');if(helper&&!observerReady){observerReady=true;new MutationObserver(()=>{const text=helper.textContent||'';if(text.startsWith('Aucun train n°')){setNumberError(text.replace('Vérifie le numéro ou la date.','Vérifie le numéro de train ou la date de départ.'),{date:true});helper.textContent=DEFAULT_HELPER;setSearching(false);return}if(text.includes('Pas de données disponibles pour cette date.')){setNumberError('Aucune donnée disponible pour cette date. Vérifie la date de départ.',{date:true});helper.textContent=DEFAULT_HELPER;setSearching(false);return}if(text.includes('train(s) direct(s) trouvé(s)')||text.includes('services portant le n°')||text.includes('Train '))window.setTimeout(filterUpcomingTrains,0);if(doneWords.some(word=>text.includes(word)))setSearching(false)}).observe(helper,{childList:true,characterData:true,subtree:true})}
+    const helper=$('helper');if(helper&&!observerReady){observerReady=true;new MutationObserver(()=>{const text=helper.textContent||'';if(text.startsWith('Aucun train n°')){setNumberError(text.replace('Vérifie le numéro ou la date.','Vérifie le numéro de train ou la date de départ.'),{date:true});helper.textContent=DEFAULT_HELPER;setSearching(false);return}if(text.includes('Pas de données disponibles pour cette date.')){setNumberError('Aucune donnée disponible pour cette date. Vérifie la date de départ.',{date:true});helper.textContent=DEFAULT_HELPER;setSearching(false);return}if(text.includes('train(s) direct(s) trouvé(s)')||text.includes('services portant le n°')||text.includes('Train '))scheduleUpcomingFilter();if(doneWords.some(word=>text.includes(word)))setSearching(false)}).observe(helper,{childList:true,characterData:true,subtree:true})}
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800)});
+  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(watchTripOptions,1800)});
 })();
