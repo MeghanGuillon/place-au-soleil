@@ -64,15 +64,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
   window.__placeAuSoleilFinalTabs=injectFinalTabStyle;
 
-  function ensureHeroVideo(){
-    const hero=document.querySelector('.hero');if(!hero)return;
-    let video=hero.querySelector('.hero-video');
-    if(!video){
-      video=document.createElement('video');video.className='hero-video';video.autoplay=true;video.muted=true;video.defaultMuted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.poster='./assets/hero-train.webp';video.setAttribute('muted','');video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');video.setAttribute('aria-hidden','true');video.innerHTML=`<source src="${HERO_VIDEO}" type="video/mp4">`;hero.insertBefore(video,hero.firstChild);
-    }
-    video.style.cssText='display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;object-fit:cover!important;object-position:center 52%!important;z-index:0!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;';
-    video.muted=true;video.defaultMuted=true;const play=()=>video.play().catch(()=>{});video.load();play();window.setTimeout(play,300);window.setTimeout(play,1000);
-  }
+  function ensureHeroVideo(){ return; }
 
   function friendlyStatus(){const status=$('status');if(!status)return;status.classList.add('friendly-status');if(!status.querySelector('.status-sun'))status.innerHTML='<span class="status-sun" aria-hidden="true">☀</span><span class="status-text"></span>';const text=status.querySelector('.status-text');if(text)text.textContent=STATUS_TEXT}
   function isFullDate(value){return /^\d{4}-\d{2}-\d{2}$/.test(value||'')}
