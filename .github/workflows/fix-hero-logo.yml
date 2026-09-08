@@ -1,0 +1,76 @@
+name: Fix hero loading and PNG logo
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-hero-logo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build PNG logo and stabilise hero loading
+        run: |
+          python -m pip install --quiet cairosvg
+          python - <<'PY'
+          from pathlib import Path
+          import cairosvg
+
+          # 1) Restore the supplied logo artwork as a real PNG asset.
+          cairosvg.svg2png(
+              url='assets/logo-place-au-soleil-header.svg',
+              write_to='assets/logo-place-au-soleil-header.png',
+              output_width=981,
+              output_height=397,
+          )
+
+          # 2) Make the first-paint hero CSS match ui.css exactly enough to avoid the jump/flicker.
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+
+          old_hero = ".hero{min-height:54vh;padding:30px clamp(20px,6vw,80px);display:flex;flex-direction:column;justify-content:space-between;color:#fff;background:radial-gradient(circle at 78% 28%,#ffc83d 0 8%,transparent 25%),linear-gradient(135deg,#516f7b,#1d2935 72%)}"
+          new_hero = ".hero{min-height:720px;padding:28px clamp(22px,5.5vw,84px) 0;display:flex;flex-direction:column;justify-content:space-between;color:#fff;background:#072d3c url('./assets/hero-train.webp') center 52%/cover no-repeat}"
+          if old_hero in html:
+              html = html.replace(old_hero, new_hero, 1)
+
+          # Preload the large hero image so the browser does not render a temporary state first.
+          preload = '<link rel="preload" as="image" href="./assets/hero-train.webp" fetchpriority="high">'
+          if preload not in html:
+              html = html.replace('<title>Place au Soleil</title>', '<title>Place au Soleil</title>\n' + preload, 1)
+
+          # Use the PNG in the header.
+          html = html.replace(
+              'src="./assets/logo-place-au-soleil-header.svg"',
+              'src="./assets/logo-place-au-soleil-header.png" width="981" height="397" fetchpriority="high"',
+              1,
+          )
+
+          # Bust CSS cache so GitHub Pages / browser cannot keep the previous header rules.
+          html = html.replace('./ui.css?v=202609071745', './ui.css?v=202609081430', 1)
+          index.write_text(html, encoding='utf-8')
+
+          css = Path('ui.css')
+          styles = css.read_text(encoding='utf-8')
+          marker = '/* stable-header-logo-20260908 */'
+          override = '''\n/* stable-header-logo-20260908 */\n.brand{display:flex!important;align-items:center!important;gap:0!important;font-size:0!important;line-height:0!important;min-height:72px!important}\n.brand-logo{display:block!important;width:210px!important;height:auto!important;max-height:85px!important;object-fit:contain!important;object-position:left center!important}\n@media(max-width:850px){.brand{min-height:58px!important}.brand-logo{width:165px!important;max-height:67px!important}}\n'''
+          if marker not in styles:
+              styles += override
+          css.write_text(styles, encoding='utf-8')
+          PY
+
+      - name: Commit fix and remove one-off workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html ui.css assets/logo-place-au-soleil-header.png
+          git rm .github/workflows/fix-hero-logo.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Stabilise le hero et restaure le logo PNG"
+          git push
