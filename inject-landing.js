@@ -38,8 +38,8 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       #number-search-panel .number-date-field{display:block!important}
       #train-number.is-error,#number-date.is-error{border-color:#d9483f!important;box-shadow:0 0 0 3px rgba(217,72,63,.14)!important;background:#fffafa!important}
       .number-feedback{display:none;margin-top:10px;color:#b93630;font-size:13px;line-height:1.45;font-weight:600}.number-feedback.show{display:block}
-      #route-svg .endpoint-small{paint-order:stroke;stroke:rgba(3,27,39,.78);stroke-width:3.5px;stroke-linejoin:round}
-      #route-svg .endpoint-city{paint-order:stroke;stroke:rgba(3,27,39,.86);stroke-width:5.5px;stroke-linejoin:round;letter-spacing:-.035em}
+      #route-svg .endpoint-small{paint-order:stroke;stroke:rgba(3,27,39,.82);stroke-width:3.5px;stroke-linejoin:round}
+      #route-svg .endpoint-city{paint-order:stroke;stroke:rgba(3,27,39,.90);stroke-width:6px;stroke-linejoin:round;letter-spacing:-.035em}
       @media(hover:hover) and (pointer:fine){
         .hero h1 .highlight{position:relative!important;display:inline-block!important;color:#ffc83d!important;padding:0 .08em .02em!important;margin:0 -.08em!important;border-radius:.13em!important;isolation:isolate!important;transition:color .28s ease!important;cursor:default!important}
         .hero h1 .highlight:before{content:""!important;position:absolute!important;left:-.02em!important;right:-.02em!important;top:.10em!important;bottom:.02em!important;border-radius:.14em!important;background:#072d3c!important;transform:scaleX(0)!important;transform-origin:left center!important;transition:transform .42s cubic-bezier(.2,.8,.2,1)!important;z-index:-1!important;box-shadow:0 14px 34px rgba(3,27,39,.34)!important}
@@ -77,31 +77,33 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function cleanStationLabel(label){
     let s=String(label||'').split(' · ')[0].trim();
     s=s.replace(/^Gare\s+(de|d’|d')\s+/i,'').replace(/\s+TGV$/i,'').trim();
-    const known=[['Paris','Paris'],['Marseille','Marseille'],['Lyon','Lyon'],['Bordeaux','Bordeaux'],['Lille','Lille'],['Nantes','Nantes'],['Rennes','Rennes'],['Strasbourg','Strasbourg'],['Toulouse','Toulouse'],['Nice','Nice'],['Montpellier','Montpellier'],['Avignon','Avignon'],['Valence','Valence'],['Dijon','Dijon'],['Grenoble','Grenoble'],['Rouen','Rouen'],['Le Mans','Le Mans'],['Tours','Tours'],['Vierzon','Vierzon'],['Nancy','Nancy'],['Metz','Metz']];
-    const found=known.find(([k])=>s.toLocaleLowerCase('fr').startsWith(k.toLocaleLowerCase('fr')));
-    return found?found[1]:s;
+    const known=['Paris','Marseille','Lyon','Bordeaux','Lille','Nantes','Rennes','Strasbourg','Toulouse','Nice','Montpellier','Avignon','Valence','Dijon','Grenoble','Rouen','Le Mans','Tours','Vierzon','Nancy','Metz'];
+    const found=known.find(k=>s.toLocaleLowerCase('fr').startsWith(k.toLocaleLowerCase('fr')));
+    return found||s;
   }
 
+  function endpointTextAnchor(x){return x>760?'end':x<240?'start':'middle'}
   function drawEndpointLabel(svg,x,y,city,type){
     if(typeof svgEl!=='function')return;
     const start=type==='start';
-    const anchor=x>760?'end':x<220?'start':'middle';
-    const dx=anchor==='end'?-18:anchor==='start'?18:0;
-    const putBelow=y<118;
-    const smallY=putBelow?y+46:Math.max(32,y-70);
-    const bigY=putBelow?y+73:Math.max(56,y-42);
+    const anchor=endpointTextAnchor(x);
+    const dx=anchor==='end'?-22:anchor==='start'?22:0;
+    const nearTop=y<150;
+    const smallY=nearTop?y+62:Math.max(34,y-92);
+    const bigY=nearTop?y+90:Math.max(60,y-62);
     const g=svgEl('g',{class:`endpoint-label endpoint-${type}`});
     const dot=svgEl('circle',{cx:x,cy:y,r:8.5,fill:start?'#ffc83d':'#fff',stroke:'#101820','stroke-width':3});
+    const stem=svgEl('line',{x1:x,y1:y+(nearTop?14:-14),x2:x+dx*.45,y2:bigY+(nearTop?-22:12),stroke:'rgba(255,255,255,.34)','stroke-width':1.4,'stroke-dasharray':'3 5'});
     const small=svgEl('text',{class:'endpoint-small',x:x+dx,y:smallY,fill:'#ffc83d','font-size':15,'font-weight':800,'text-anchor':anchor});
     small.textContent=start?'Départ':'Arrivée';
     const big=svgEl('text',{class:'endpoint-city',x:x+dx,y:bigY,fill:'#fff','font-size':28,'font-weight':800,'text-anchor':anchor});
     big.textContent=city || (start?'Départ':'Arrivée');
-    g.append(dot,small,big);svg.appendChild(g);
+    g.append(stem,dot,small,big);svg.appendChild(g);
   }
 
   function routeProjector(pts){
     let minA=Math.min(...pts.map(p=>p.lat)),maxA=Math.max(...pts.map(p=>p.lat)),minO=Math.min(...pts.map(p=>p.lon)),maxO=Math.max(...pts.map(p=>p.lon));
-    let padX=72,padY=78,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
+    let padX=76,padY=92,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
     return p=>[500+(p.lon-cx)*scale,215-(p.lat-cy)*scale];
   }
 
@@ -112,9 +114,9 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   function installRouteAnimation(){
-    if(window.__routeAnimationLabelsInstalled)return;
-    if(typeof drawAnimated!=='function' || typeof svgEl!=='function')return;
-    window.__routeAnimationLabelsInstalled=true;
+    if(typeof drawAnimated!=='function' || typeof svgEl!=='function' || typeof stopAnimation!=='function' || typeof renderAnimation!=='function')return false;
+    if(window.__routeAnimationOverrideVersion==='202609081120')return true;
+    window.__routeAnimationOverrideVersion='202609081120';
     drawAnimated=function(segs){
       stopAnimation();
       let svg=$('route-svg'),pts=segs.flatMap(s=>[s.start,s.end]);
@@ -122,24 +124,28 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       if(pts.length<2)return;
       let pr=routeProjector(pts);
       let defs=svgEl('defs'),glow=svgEl('filter',{id:'routeGlow',x:'-50%',y:'-50%',width:'200%',height:'200%'}),blur=svgEl('feGaussianBlur',{stdDeviation:'7',result:'b'});glow.appendChild(blur);
-      let sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'20'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
+      let sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'22'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
       let pathParts=[];segs.forEach((s,i)=>{let a=pr(s.start),b=pr(s.end);if(!i)pathParts.push(`M${a[0]},${a[1]}`);pathParts.push(`L${b[0]},${b[1]}`)});
       let d=pathParts.join(' '),under=svgEl('path',{d,fill:'none',stroke:'#ffffff24','stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round'}),base=svgEl('path',{d,fill:'none',stroke:'#91a0ab','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}),progress=svgEl('path',{id:'route-progress',d,fill:'none',stroke:'#ffc83d','stroke-width':6.4,'stroke-linecap':'round','stroke-linejoin':'round',filter:'url(#routeGlow)'});svg.append(under,base,progress);
       let length=progress.getTotalLength();progress.setAttribute('stroke-dasharray',length);progress.setAttribute('stroke-dashoffset',length);
       let first=pr(segs[0].start),last=pr(segs[segs.length-1].end),from=cleanStationLabel($('from')?.value),to=cleanStationLabel($('to')?.value);
       drawEndpointLabel(svg,first[0],first[1],from,'start');
       drawEndpointLabel(svg,last[0],last[1],to,'end');
-      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.4,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:64,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:29,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.5}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:17,rx:32,ry:9,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-27,y:-15,width:54,height:30,rx:9,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2}),stripe=svgEl('rect',{x:-22,y:6,width:41,height:4.5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-16,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M27 -12 L43 0 L27 12 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2,'stroke-linejoin':'round'});
-      addPulse(sunHalo,'r','58;72;58','2.4s');addPulse(sunHalo,'opacity','.16;.25;.16','2.4s');addPulse(sunCore,'r','27;32;27','2.4s');
-      train.append(shadow,body,stripe,window1,window2,nose);svg.append(ray,sunHalo,sunCore,train);ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0);
+      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.4,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:68,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:30,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.5}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:17,rx:32,ry:9,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-27,y:-15,width:54,height:30,rx:9,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2}),stripe=svgEl('rect',{x:-22,y:6,width:41,height:4.5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-16,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M27 -12 L43 0 L27 12 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2,'stroke-linejoin':'round'});
+      addPulse(sunHalo,'r','58;76;58','2.4s');addPulse(sunHalo,'opacity','.16;.26;.16','2.4s');addPulse(sunCore,'r','28;33;28','2.4s');
+      train.append(shadow,body,stripe,window1,window2,nose);svg.append(ray,sunHalo,sunCore,train);
+      ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0);
     };
+    installAnimationRenderPolish(true);
+    return true;
   }
 
-  function installAnimationRenderPolish(){
-    if(window.__routeAnimationRenderPolished)return;
-    if(typeof renderAnimation!=='function')return;
-    window.__routeAnimationRenderPolished=true;
-    const original=renderAnimation;
+  function installAnimationRenderPolish(force=false){
+    if(typeof renderAnimation!=='function')return false;
+    if(window.__routeAnimationRenderPolishVersion==='202609081120'&&!force)return true;
+    if(!window.__placeAuSoleilOriginalRenderAnimation)window.__placeAuSoleilOriginalRenderAnimation=renderAnimation;
+    window.__routeAnimationRenderPolishVersion='202609081120';
+    const original=window.__placeAuSoleilOriginalRenderAnimation;
     renderAnimation=function(p){
       original(p);
       const train=$('train-marker'), core=$('sun-core'), halo=$('sun-halo'), ray=$('sun-ray');
@@ -151,16 +157,17 @@ fetch('./landing-blocks.html',{cache:'no-store'})
           const tx=Number(match[1]), ty=Number(match[2]);
           const sx=Number(core.getAttribute('cx')), sy=Number(core.getAttribute('cy'));
           let vx=sx-tx, vy=sy-ty, len=Math.hypot(vx,vy)||1;
-          const target=Math.max(205,Math.min(260,len*1.36));
+          const target=Math.max(230,Math.min(300,len*1.55));
           let nx=tx+(vx/len)*target, ny=ty+(vy/len)*target;
-          nx=Math.max(72,Math.min(928,nx));
-          ny=Math.max(56,Math.min(186,ny));
+          nx=Math.max(76,Math.min(924,nx));
+          ny=Math.max(54,Math.min(186,ny));
           core.setAttribute('cx',nx);core.setAttribute('cy',ny);
           halo.setAttribute('cx',nx);halo.setAttribute('cy',ny);
-          ray.setAttribute('x1',nx);ray.setAttribute('y1',ny+32);
+          ray.setAttribute('x1',nx);ray.setAttribute('y1',ny+34);
         }
       }
     };
+    return true;
   }
 
   function friendlyStatus(){const status=$('status');if(!status)return;status.classList.add('friendly-status');if(!status.querySelector('.status-sun'))status.innerHTML='<span class="status-sun" aria-hidden="true">☀</span><span class="status-text"></span>';const text=status.querySelector('.status-text');if(text)text.textContent=STATUS_TEXT}
@@ -204,4 +211,6 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
   window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(installAnimationRenderPolish,1800);window.setTimeout(watchTripOptions,1800);window.setTimeout(scheduleUpcomingFilter,2200)});
+  const late=setInterval(()=>{const ok=installRouteAnimation()&&installAnimationRenderPolish();if(ok&&document.readyState==='complete')clearInterval(late)},500);
+  window.setTimeout(()=>clearInterval(late),10000);
 })();
