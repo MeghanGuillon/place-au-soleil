@@ -1,5 +1,5 @@
 (function(){
-  const VERSION='202609081145-smooth-sun-v7';
+  const VERSION='202609081150-natural-sun-v8';
   const NS='http://www.w3.org/2000/svg';
   const W=1000,H=430;
   let SUN_STATE={x:null,y:null};
@@ -7,6 +7,7 @@
   function $(id){return document.getElementById(id)}
   function svgEl(name,attrs={}){const el=document.createElementNS(NS,name);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el}
   function lerp(a,b,t){return a+(b-a)*t}
+  function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 
   function normLabel(label){
     let s=String(label||'').split(' · ')[0].trim();
@@ -58,6 +59,15 @@
   }
   function addPulse(el,attr,values,dur){const a=svgEl('animate',{attributeName:attr,values,dur,repeatCount:'indefinite',calcMode:'spline',keyTimes:'0;0.5;1',keySplines:'.3 0 .25 1;.3 0 .25 1'});el.appendChild(a)}
 
+  function naturalSunTarget(x,y,cur){
+    const az=(cur.s.sunAz||180)*Math.PI/180;
+    const alt=Math.max(0,Math.min(80,cur.s.sunAlt||0));
+    let vx=Math.sin(az),vy=-Math.cos(az)*0.62-alt/180;
+    const len=Math.hypot(vx,vy)||1;vx/=len;vy/=len;
+    const radius=182-alt*.35;
+    return {x:clamp(x+vx*radius,82,918),y:clamp(y+vy*radius-16,58,244)};
+  }
+
   function install(){
     if(typeof stopAnimation!=='function'||typeof interpolate!=='function'||typeof pointAtProgress!=='function'||typeof fmtMin!=='function')return false;
     if(window.__routeShadowFixVersion===VERSION)return true;
@@ -66,33 +76,33 @@
       stopAnimation();SUN_STATE={x:null,y:null};
       const svg=$('route-svg'),pts=segs.flatMap(s=>[s.start,s.end]);svg.innerHTML='';if(pts.length<2)return;
       const pr=routeProjector(pts),defs=svgEl('defs'),glow=svgEl('filter',{id:'routeGlow',x:'-50%',y:'-50%',width:'200%',height:'200%'}),blur=svgEl('feGaussianBlur',{stdDeviation:'7'});glow.appendChild(blur);
-      const sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'24'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
+      const sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'20'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
       const routeXY=[];let parts=[];segs.forEach((s,i)=>{const a=pr(s.start),b=pr(s.end);if(!i){parts.push(`M${a[0]},${a[1]}`);routeXY.push(a)}parts.push(`L${b[0]},${b[1]}`);routeXY.push(b)});
       const d=parts.join(' '),under=svgEl('path',{d,fill:'none',stroke:'#ffffff24','stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round'}),base=svgEl('path',{d,fill:'none',stroke:'#91a0ab','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}),progress=svgEl('path',{id:'route-progress',d,fill:'none',stroke:'#ffc83d','stroke-width':6.8,'stroke-linecap':'round','stroke-linejoin':'round',filter:'url(#routeGlow)'});
       const endpointPointLayer=svgEl('g',{id:'endpoint-point-layer'}),dynamicLayer=svgEl('g',{id:'dynamic-layer'}),endpointTextLayer=svgEl('g',{id:'endpoint-text-layer'});svg.append(under,base,progress,endpointPointLayer,dynamicLayer,endpointTextLayer);
       const length=progress.getTotalLength();progress.setAttribute('stroke-dasharray',length);progress.setAttribute('stroke-dashoffset',length);
       const first=routeXY[0],last=routeXY[routeXY.length-1],from=normLabel($('from')?.value),to=normLabel($('to')?.value),pair=chooseLabelPair(first,last,routeXY,from,to);drawEndpoint(endpointPointLayer,endpointTextLayer,first,from,'start',pair[0]);drawEndpoint(endpointPointLayer,endpointTextLayer,last,to,'end',pair[1]);
-      const ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.2,'stroke-dasharray':'7 9','stroke-linecap':'round','opacity':.68}),sunHalo=svgEl('circle',{id:'sun-halo',r:72,fill:'#ffc83d','opacity':.16,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:34,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.4}),trainShadow=svgEl('ellipse',{id:'train-cast-shadow',cx:0,cy:0,rx:50,ry:16,fill:'#031722','opacity':.44,filter:'url(#routeGlow)'}),train=svgEl('g',{id:'train-marker'}),body=svgEl('rect',{x:-36,y:-20,width:72,height:40,rx:11,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.6}),stripe=svgEl('rect',{x:-25,y:8,width:48,height:5,rx:2,fill:'#dfe8ed','opacity':.95}),window1=svgEl('rect',{x:-21,y:-9,width:13,height:11,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:3,y:-9,width:13,height:11,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M36 -17 L58 0 L36 17 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.6,'stroke-linejoin':'round'});
-      addPulse(sunHalo,'r','72;82;72','2.5s');addPulse(sunHalo,'opacity','.13;.21;.13','2.5s');addPulse(sunCore,'r','34;38;34','2.5s');
+      const ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3,'stroke-dasharray':'7 10','stroke-linecap':'round','opacity':.62}),sunHalo=svgEl('circle',{id:'sun-halo',r:62,fill:'#ffc83d','opacity':.15,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:32,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.2}),trainShadow=svgEl('ellipse',{id:'train-cast-shadow',cx:0,cy:0,rx:48,ry:15,fill:'#031722','opacity':.42,filter:'url(#routeGlow)'}),train=svgEl('g',{id:'train-marker'}),body=svgEl('rect',{x:-35,y:-19,width:70,height:38,rx:11,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.5}),stripe=svgEl('rect',{x:-24,y:8,width:47,height:5,rx:2,fill:'#dfe8ed','opacity':.95}),window1=svgEl('rect',{x:-20,y:-9,width:12,height:11,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:3,y:-9,width:12,height:11,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M35 -17 L57 0 L35 17 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.5,'stroke-linejoin':'round'});
+      addPulse(sunHalo,'r','62;72;62','2.8s');addPulse(sunHalo,'opacity','.12;.19;.12','2.8s');addPulse(sunCore,'r','32;35;32','2.8s');
       train.append(body,stripe,window1,window2,nose);dynamicLayer.append(ray,sunHalo,sunCore,trainShadow,train);
       ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length,routeXY};renderAnimation(0)
     };
     window.renderAnimation=function(p){
       if(!ANIM.segments.length||!ANIM.project)return;ANIM.progress=Math.max(0,Math.min(1,p));const cur=pointAtProgress(ANIM.progress);if(!cur)return;
-      const x=cur.xy[0],y=cur.xy[1],angle=cur.angle*Math.PI/180,left={x:Math.sin(angle),y:-Math.cos(angle)},right={x:-Math.sin(angle),y:Math.cos(angle)};
-      let sideVec=cur.s.side==='left'?left:cur.s.side==='right'?right:null;
-      if(!sideVec){const az=(cur.s.sunAz||180)*Math.PI/180;sideVec={x:Math.sin(az),y:-Math.cos(az)}}
-      const sideLen=Math.hypot(sideVec.x,sideVec.y)||1;sideVec={x:sideVec.x/sideLen,y:sideVec.y/sideLen};
-      const radius=158,lift=24,targetSunX=x+sideVec.x*radius,targetSunY=y+sideVec.y*radius-lift;
-      if(SUN_STATE.x==null||SUN_STATE.y==null||ANIM.progress<.015){SUN_STATE.x=targetSunX;SUN_STATE.y=targetSunY}else{SUN_STATE.x=lerp(SUN_STATE.x,targetSunX,.13);SUN_STATE.y=lerp(SUN_STATE.y,targetSunY,.13)}
-      const sunX=Math.max(72,Math.min(928,SUN_STATE.x)),sunY=Math.max(54,Math.min(232,SUN_STATE.y));
+      const x=cur.xy[0],y=cur.xy[1],target=naturalSunTarget(x,y,cur);
+      if(SUN_STATE.x==null||SUN_STATE.y==null||ANIM.progress<.015){SUN_STATE.x=target.x;SUN_STATE.y=target.y}else{SUN_STATE.x=lerp(SUN_STATE.x,target.x,.10);SUN_STATE.y=lerp(SUN_STATE.y,target.y,.10)}
+      const sunX=SUN_STATE.x,sunY=SUN_STATE.y;
       const train=$('train-marker'),shadow=$('train-cast-shadow'),core=$('sun-core'),halo=$('sun-halo'),ray=$('sun-ray'),prog=$('route-progress');
-      train?.setAttribute('transform',`translate(${x} ${y}) rotate(${cur.angle}) scale(1.26)`);core?.setAttribute('cx',sunX);core?.setAttribute('cy',sunY);halo?.setAttribute('cx',sunX);halo?.setAttribute('cy',sunY);
-      const vx=x-sunX,vy=y-sunY,len=Math.hypot(vx,vy)||1,ux=vx/len,uy=vy/len,rayGap=44;
+      train?.setAttribute('transform',`translate(${x} ${y}) rotate(${cur.angle}) scale(1.24)`);core?.setAttribute('cx',sunX);core?.setAttribute('cy',sunY);halo?.setAttribute('cx',sunX);halo?.setAttribute('cy',sunY);
+      const vx=x-sunX,vy=y-sunY,len=Math.hypot(vx,vy)||1,ux=vx/len,uy=vy/len,rayGap=46;
       ray?.setAttribute('x1',sunX+ux*rayGap);ray?.setAttribute('y1',sunY+uy*rayGap);ray?.setAttribute('x2',x);ray?.setAttribute('y2',y);
-      if(shadow){const sx=x+ux*30,sy=y+uy*22+7;shadow.setAttribute('cx',sx);shadow.setAttribute('cy',sy);shadow.setAttribute('transform',`rotate(${Math.atan2(uy,ux)*180/Math.PI} ${sx} ${sy})`)}
-      if(prog&&ANIM.total)prog.setAttribute('stroke-dashoffset',ANIM.total*(1-ANIM.progress));const color=cur.s.side==='right'?'#ffc83d':cur.s.side==='left'?'#28d7ff':'#53616a';if(ray)ray.setAttribute('stroke',color);if(halo)halo.setAttribute('fill',color);if(prog)prog.setAttribute('stroke',color);
-      const label=cur.s.side==='right'?'Soleil à droite':cur.s.side==='left'?'Soleil à gauche':'Exposition latérale faible',advice=cur.s.side==='right'?'Privilégie le côté gauche à cet instant.':cur.s.side==='left'?'Privilégie le côté droit à cet instant.':'Le choix du côté change peu à cet instant.';$('animation-status').innerHTML=`<strong>${fmtMin(cur.s.midMin)} · ${label}</strong>${advice}`;
+      if(shadow){const sx=x+ux*29,sy=y+uy*21+7;shadow.setAttribute('cx',sx);shadow.setAttribute('cy',sy);shadow.setAttribute('transform',`rotate(${Math.atan2(uy,ux)*180/Math.PI} ${sx} ${sy})`)}
+      if(prog&&ANIM.total)prog.setAttribute('stroke-dashoffset',ANIM.total*(1-ANIM.progress));
+      const color=cur.s.side==='right'?'#ffc83d':cur.s.side==='left'?'#28d7ff':'#53616a';
+      if(ray)ray.setAttribute('stroke',color);if(halo)halo.setAttribute('fill',color);if(prog)prog.setAttribute('stroke',color);
+      const label=cur.s.side==='right'?'Soleil à droite':cur.s.side==='left'?'Soleil à gauche':'Exposition latérale faible';
+      const advice=cur.s.side==='right'?'Privilégie le côté gauche à cet instant.':cur.s.side==='left'?'Privilégie le côté droit à cet instant.':'Le choix du côté change peu à cet instant.';
+      $('animation-status').innerHTML=`<strong>${fmtMin(cur.s.midMin)} · ${label}</strong>${advice}`;
     };
     return true;
   }
