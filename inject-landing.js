@@ -38,8 +38,8 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       #number-search-panel .number-date-field{display:block!important}
       #train-number.is-error,#number-date.is-error{border-color:#d9483f!important;box-shadow:0 0 0 3px rgba(217,72,63,.14)!important;background:#fffafa!important}
       .number-feedback{display:none;margin-top:10px;color:#b93630;font-size:13px;line-height:1.45;font-weight:600}.number-feedback.show{display:block}
-      #route-svg .endpoint-small{paint-order:stroke;stroke:rgba(3,27,39,.68);stroke-width:3px;stroke-linejoin:round}
-      #route-svg .endpoint-city{paint-order:stroke;stroke:rgba(3,27,39,.78);stroke-width:5px;stroke-linejoin:round;letter-spacing:-.035em}
+      #route-svg .endpoint-small{paint-order:stroke;stroke:rgba(3,27,39,.78);stroke-width:3.5px;stroke-linejoin:round}
+      #route-svg .endpoint-city{paint-order:stroke;stroke:rgba(3,27,39,.86);stroke-width:5.5px;stroke-linejoin:round;letter-spacing:-.035em}
       @media(hover:hover) and (pointer:fine){
         .hero h1 .highlight{position:relative!important;display:inline-block!important;color:#ffc83d!important;padding:0 .08em .02em!important;margin:0 -.08em!important;border-radius:.13em!important;isolation:isolate!important;transition:color .28s ease!important;cursor:default!important}
         .hero h1 .highlight:before{content:""!important;position:absolute!important;left:-.02em!important;right:-.02em!important;top:.10em!important;bottom:.02em!important;border-radius:.14em!important;background:#072d3c!important;transform:scaleX(0)!important;transform-origin:left center!important;transition:transform .42s cubic-bezier(.2,.8,.2,1)!important;z-index:-1!important;box-shadow:0 14px 34px rgba(3,27,39,.34)!important}
@@ -77,7 +77,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function cleanStationLabel(label){
     let s=String(label||'').split(' · ')[0].trim();
     s=s.replace(/^Gare\s+(de|d’|d')\s+/i,'').replace(/\s+TGV$/i,'').trim();
-    const known=[['Paris','Paris'],['Marseille','Marseille'],['Lyon','Lyon'],['Bordeaux','Bordeaux'],['Lille','Lille'],['Nantes','Nantes'],['Rennes','Rennes'],['Strasbourg','Strasbourg'],['Toulouse','Toulouse'],['Nice','Nice'],['Montpellier','Montpellier'],['Avignon','Avignon'],['Valence','Valence'],['Dijon','Dijon'],['Grenoble','Grenoble'],['Rouen','Rouen'],['Le Mans','Le Mans'],['Tours','Tours'],['Nancy','Nancy'],['Metz','Metz']];
+    const known=[['Paris','Paris'],['Marseille','Marseille'],['Lyon','Lyon'],['Bordeaux','Bordeaux'],['Lille','Lille'],['Nantes','Nantes'],['Rennes','Rennes'],['Strasbourg','Strasbourg'],['Toulouse','Toulouse'],['Nice','Nice'],['Montpellier','Montpellier'],['Avignon','Avignon'],['Valence','Valence'],['Dijon','Dijon'],['Grenoble','Grenoble'],['Rouen','Rouen'],['Le Mans','Le Mans'],['Tours','Tours'],['Vierzon','Vierzon'],['Nancy','Nancy'],['Metz','Metz']];
     const found=known.find(([k])=>s.toLocaleLowerCase('fr').startsWith(k.toLocaleLowerCase('fr')));
     return found?found[1]:s;
   }
@@ -86,22 +86,29 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     if(typeof svgEl!=='function')return;
     const start=type==='start';
     const anchor=x>760?'end':'start';
-    const dx=anchor==='end'?-16:16;
-    const smallY=y>350?y-18:y-10;
-    const bigY=y>350?y+8:y+17;
+    const dx=anchor==='end'?-18:18;
+    const putBelow=y<95;
+    const smallY=putBelow?y+38:y-44;
+    const bigY=putBelow?y+64:y-18;
     const g=svgEl('g',{class:`endpoint-label endpoint-${type}`});
-    const dot=svgEl('circle',{cx:x,cy:y,r:8,fill:start?'#ffc83d':'#fff',stroke:'#101820','stroke-width':3});
+    const dot=svgEl('circle',{cx:x,cy:y,r:8.5,fill:start?'#ffc83d':'#fff',stroke:'#101820','stroke-width':3});
     const small=svgEl('text',{class:'endpoint-small',x:x+dx,y:smallY,fill:'#ffc83d','font-size':15,'font-weight':800,'text-anchor':anchor});
     small.textContent=start?'Départ':'Arrivée';
-    const big=svgEl('text',{class:'endpoint-city',x:x+dx,y:bigY,fill:'#fff','font-size':27,'font-weight':800,'text-anchor':anchor});
+    const big=svgEl('text',{class:'endpoint-city',x:x+dx,y:bigY,fill:'#fff','font-size':28,'font-weight':800,'text-anchor':anchor});
     big.textContent=city || (start?'Départ':'Arrivée');
     g.append(dot,small,big);svg.appendChild(g);
   }
 
   function routeProjector(pts){
     let minA=Math.min(...pts.map(p=>p.lat)),maxA=Math.max(...pts.map(p=>p.lat)),minO=Math.min(...pts.map(p=>p.lon)),maxO=Math.max(...pts.map(p=>p.lon));
-    let padX=70,padY=62,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
+    let padX=72,padY=70,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
     return p=>[500+(p.lon-cx)*scale,215-(p.lat-cy)*scale];
+  }
+
+  function addPulse(el,attr,values,dur){
+    if(typeof svgEl!=='function'||!el)return;
+    const a=svgEl('animate',{attributeName:attr,values,dur,repeatCount:'indefinite',calcMode:'spline',keyTimes:'0;0.5;1',keySplines:'.3 0 .25 1;.3 0 .25 1'});
+    el.appendChild(a);
   }
 
   function installRouteAnimation(){
@@ -115,15 +122,31 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       if(pts.length<2)return;
       let pr=routeProjector(pts);
       let defs=svgEl('defs'),glow=svgEl('filter',{id:'routeGlow',x:'-50%',y:'-50%',width:'200%',height:'200%'}),blur=svgEl('feGaussianBlur',{stdDeviation:'7',result:'b'});glow.appendChild(blur);
-      let sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'18'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
+      let sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'20'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
       let pathParts=[];segs.forEach((s,i)=>{let a=pr(s.start),b=pr(s.end);if(!i)pathParts.push(`M${a[0]},${a[1]}`);pathParts.push(`L${b[0]},${b[1]}`)});
       let d=pathParts.join(' '),under=svgEl('path',{d,fill:'none',stroke:'#ffffff24','stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round'}),base=svgEl('path',{d,fill:'none',stroke:'#91a0ab','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}),progress=svgEl('path',{id:'route-progress',d,fill:'none',stroke:'#ffc83d','stroke-width':6.4,'stroke-linecap':'round','stroke-linejoin':'round',filter:'url(#routeGlow)'});svg.append(under,base,progress);
       let length=progress.getTotalLength();progress.setAttribute('stroke-dasharray',length);progress.setAttribute('stroke-dashoffset',length);
       let first=pr(segs[0].start),last=pr(segs[segs.length-1].end),from=cleanStationLabel($('from')?.value),to=cleanStationLabel($('to')?.value);
       drawEndpointLabel(svg,first[0],first[1],from,'start');
       drawEndpointLabel(svg,last[0],last[1],to,'end');
-      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3,'stroke-dasharray':'8 8','opacity':.7}),sunHalo=svgEl('circle',{id:'sun-halo',r:50,fill:'#ffc83d','opacity':.18,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:22,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:15,rx:28,ry:8,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-24,y:-13,width:48,height:26,rx:8,fill:'#f5f7f8',stroke:'#101820','stroke-width':3}),stripe=svgEl('rect',{x:-20,y:5,width:37,height:4,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-14,y:-6,width:9,height:8,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-6,width:9,height:8,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M24 -10 L38 0 L24 10 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3,'stroke-linejoin':'round'});
+      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.4,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:64,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:29,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.5}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:17,rx:32,ry:9,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-27,y:-15,width:54,height:30,rx:9,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2}),stripe=svgEl('rect',{x:-22,y:6,width:41,height:4.5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-16,y:-7,width:10,width:10,height:9,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M27 -12 L43 0 L27 12 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2,'stroke-linejoin':'round'});
+      addPulse(sunHalo,'r','58;72;58','2.4s');addPulse(sunHalo,'opacity','.16;.25;.16','2.4s');addPulse(sunCore,'r','27;32;27','2.4s');
       train.append(shadow,body,stripe,window1,window2,nose);svg.append(ray,sunHalo,sunCore,train);ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0);
+    };
+  }
+
+  function installAnimationRenderPolish(){
+    if(window.__routeAnimationRenderPolished)return;
+    if(typeof renderAnimation!=='function')return;
+    window.__routeAnimationRenderPolished=true;
+    const original=renderAnimation;
+    renderAnimation=function(p){
+      original(p);
+      const train=$('train-marker');
+      if(train){
+        const current=train.getAttribute('transform')||'';
+        if(current && !current.includes('scale('))train.setAttribute('transform',current+' scale(1.12)');
+      }
     };
   }
 
@@ -158,7 +181,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function setSearching(active){const panel=document.querySelector('#planner .panel'),status=$('status');panel?.classList.toggle('is-searching',active);status?.classList.toggle('is-searching',active);friendlyStatus()}
 
   function boot(){
-    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();watchTripOptions();scheduleUpcomingFilter();
+    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();installAnimationRenderPolish();watchTripOptions();scheduleUpcomingFilter();
     const plannerFoot=document.querySelector('.planner-foot');if(plannerFoot)plannerFoot.style.display='none';
     const hint=document.querySelector('#number-search-panel > .hint');if(hint)hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
     const trainInput=$('train-number');if(trainInput&&!trainInput.dataset.errorHooked){trainInput.dataset.errorHooked='true';trainInput.addEventListener('input',clearNumberError)}
@@ -167,5 +190,5 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(watchTripOptions,1800);window.setTimeout(scheduleUpcomingFilter,2200)});
+  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(installAnimationRenderPolish,1800);window.setTimeout(watchTripOptions,1800);window.setTimeout(scheduleUpcomingFilter,2200)});
 })();
