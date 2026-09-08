@@ -1,6 +1,7 @@
 (function(){
-  const VERSION='202609081330-layered-v5';
+  const VERSION='202609081340-sun-safe-v6';
   const NS='http://www.w3.org/2000/svg';
+  const W=1000,H=430;
   function $(id){return document.getElementById(id)}
   function svgEl(name,attrs={}){const el=document.createElementNS(NS,name);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el}
   function normLabel(label){
@@ -11,22 +12,23 @@
   }
   function splitLabel(s){
     s=String(s||'').replace(/ Saint-/g,'\nSaint-');
-    if(s.length>22 && s.includes('-')){const parts=s.split('-'),mid=Math.ceil(parts.length/2);return [parts.slice(0,mid).join('-'),parts.slice(mid).join('-')].filter(Boolean)}
-    if(s.length>24 && s.includes(' ')){const words=s.split(/\s+/),mid=Math.ceil(words.length/2);return [words.slice(0,mid).join(' '),words.slice(mid).join(' ')].filter(Boolean)}
+    if(s.length>22 && s.includes('-')){const p=s.split('-'),m=Math.ceil(p.length/2);return [p.slice(0,m).join('-'),p.slice(m).join('-')].filter(Boolean)}
+    if(s.length>24 && s.includes(' ')){const p=s.split(/\s+/),m=Math.ceil(p.length/2);return [p.slice(0,m).join(' '),p.slice(m).join(' ')].filter(Boolean)}
     return s.split('\n').filter(Boolean);
   }
   function distPointSeg(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,wx=px-ax,wy=py-ay,c1=vx*wx+vy*wy,c2=vx*vx+vy*vy,t=c2?Math.max(0,Math.min(1,c1/c2)):0,x=ax+t*vx,y=ay+t*vy;return Math.hypot(px-x,py-y)}
   function routeMinDistance(x,y,routeXY){let d=999;for(let i=0;i<routeXY.length-1;i++){const a=routeXY[i],b=routeXY[i+1];d=Math.min(d,distPointSeg(x,y,a[0],a[1],b[0],b[1]))}return d}
-  function rectFor(pos,label){const lines=splitLabel(label),w=Math.min(340,Math.max(120,Math.max(...lines.map(l=>l.length))*15)),h=lines.length>1?66:38,half=pos.anchor==='middle'?w/2:pos.anchor==='end'?w:0;return{left:pos.x-half,right:pos.x-half+w,top:pos.y-34,bottom:pos.y-34+h,w,h}}
-  function overlap(a,b){return Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))}
+  function rectFor(pos,label){const lines=splitLabel(label),longest=Math.max(1,...lines.map(l=>l.length)),w=Math.min(340,Math.max(120,longest*15)),h=lines.length>1?66:38,half=pos.anchor==='middle'?w/2:pos.anchor==='end'?w:0;return{left:pos.x-half,right:pos.x-half+w,top:pos.y-34,bottom:pos.y-34+h,w,h}}
+  function rectOverlap(a,b){return Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))}
+  function pointRectDistance(x,y,r){const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom);return Math.hypot(dx,dy)}
   function routeProjector(pts){
     const minLat=Math.min(...pts.map(p=>p.lat)),maxLat=Math.max(...pts.map(p=>p.lat)),minLon=Math.min(...pts.map(p=>p.lon)),maxLon=Math.max(...pts.map(p=>p.lon));
-    const padX=112,padY=88,dx=Math.max(.001,maxLon-minLon),dy=Math.max(.001,maxLat-minLat),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minLon+maxLon)/2,cy=(minLat+maxLat)/2;
-    const raw=p=>[500+(p.lon-cx)*scale,215-(p.lat-cy)*scale];
+    const padX=112,padY=88,dx=Math.max(.001,maxLon-minLon),dy=Math.max(.001,maxLat-minLat),scale=Math.min((W-padX*2)/dx,(H-padY*2)/dy),cx=(minLon+maxLon)/2,cy=(minLat+maxLat)/2;
+    const raw=p=>[W/2+(p.lon-cx)*scale,H/2-(p.lat-cy)*scale];
     const xy=pts.map(raw),spanX=Math.max(1,Math.max(...xy.map(p=>p[0]))-Math.min(...xy.map(p=>p[0]))),spanY=Math.max(1,Math.max(...xy.map(p=>p[1]))-Math.min(...xy.map(p=>p[1])));
     const boostX=spanY>spanX*1.18?Math.min(3.1,Math.max(1.55,480/spanX)):1;
     const boostY=spanX>spanY*2.8?Math.min(1.25,Math.max(1,180/spanY)):1;
-    return p=>{const a=raw(p);return [500+(a[0]-500)*boostX,215+(a[1]-215)*boostY]};
+    return p=>{const a=raw(p);return [W/2+(a[0]-W/2)*boostX,H/2+(a[1]-H/2)*boostY]};
   }
   function tangentAt(routeXY,type){if(routeXY.length<2)return{x:1,y:0};const a=type==='start'?routeXY[0]:routeXY[routeXY.length-2],b=type==='start'?routeXY[1]:routeXY[routeXY.length-1],vx=b[0]-a[0],vy=b[1]-a[1],len=Math.hypot(vx,vy)||1;return{x:vx/len,y:vy/len}}
   function candidates(x,y,routeXY,label,type){
@@ -37,7 +39,7 @@
   }
   function chooseLabelPair(start,end,routeXY,startLabel,endLabel){
     const a=candidates(start[0],start[1],routeXY,startLabel,'start'),b=candidates(end[0],end[1],routeXY,endLabel,'end');let best=[a[0],b[0]],score=-Infinity;
-    for(const p of a)for(const q of b){let s=p.priority+q.priority;[p,q].forEach(o=>{s+=routeMinDistance(o.x,o.y,routeXY)*9;s+=routeMinDistance(o.rect.left,o.rect.top,routeXY)*1.2;s+=routeMinDistance(o.rect.right,o.rect.bottom,routeXY)*1.2});const ov=overlap(p.rect,q.rect);if(ov)s-=5000+ov*4;const gap=Math.hypot(p.x-q.x,p.y-q.y);if(gap<230)s-=2600+(230-gap)*11;if(s>score){score=s;best=[p,q]}}
+    for(const p of a)for(const q of b){let s=p.priority+q.priority;[p,q].forEach(o=>{s+=routeMinDistance(o.x,o.y,routeXY)*9;s+=routeMinDistance(o.rect.left,o.rect.top,routeXY)*1.2;s+=routeMinDistance(o.rect.right,o.rect.bottom,routeXY)*1.2});const ov=rectOverlap(p.rect,q.rect);if(ov)s-=5000+ov*4;const gap=Math.hypot(p.x-q.x,p.y-q.y);if(gap<230)s-=2600+(230-gap)*11;if(s>score){score=s;best=[p,q]}}
     return best;
   }
   function addTextLines(text,lines,x,y,size){lines.forEach((line,i)=>{const t=svgEl('tspan',{x,y:y+i*(size*.92)});t.textContent=line;text.appendChild(t)})}
@@ -50,6 +52,24 @@
     pointGroup.append(stem,dot);textGroup.append(small,big);pointLayer.appendChild(pointGroup);textLayer.appendChild(textGroup);
   }
   function addPulse(el,attr,values,dur){const a=svgEl('animate',{attributeName:attr,values,dur,repeatCount:'indefinite',calcMode:'spline',keyTimes:'0;0.5;1',keySplines:'.3 0 .25 1;.3 0 .25 1'});el.appendChild(a)}
+  function rotate(v,rad){const c=Math.cos(rad),s=Math.sin(rad);return{x:v.x*c-v.y*s,y:v.x*s+v.y*c}}
+  function chooseSun(x,y,sideVec,routeXY,labelRects){
+    const baseLen=Math.hypot(sideVec.x,sideVec.y)||1,base={x:sideVec.x/baseLen,y:sideVec.y/baseLen};
+    const angles=[0,-.34,.34,-.62,.62],radii=[190,220,250];
+    let best=null,bestScore=-Infinity;
+    for(const a of angles){const v=rotate(base,a);for(const r of radii){
+      const sx=x+v.x*r,sy=y+v.y*r-18;
+      if(sx<86||sx>914||sy<62||sy>278)continue;
+      const routeD=routeMinDistance(sx,sy,routeXY),trainD=Math.hypot(sx-x,sy-y);
+      let score=routeD*7+trainD*.45-r*.05;
+      if(routeD<112)score-=3500+(112-routeD)*55;
+      for(const rect of labelRects||[]){const d=pointRectDistance(sx,sy,rect);score+=Math.min(d,150)*1.2;if(d<86)score-=2500+(86-d)*35;}
+      if(score>bestScore){bestScore=score;best={x:sx,y:sy,v}};
+    }}
+    if(best)return best;
+    const sx=Math.max(92,Math.min(908,x+base.x*230)),sy=Math.max(66,Math.min(260,y+base.y*230-18));
+    return {x:sx,y:sy,v:base};
+  }
   function install(){
     if(typeof stopAnimation!=='function'||typeof interpolate!=='function'||typeof pointAtProgress!=='function'||typeof fmtMin!=='function')return false;
     if(window.__routeShadowFixVersion===VERSION)return true;
@@ -65,17 +85,18 @@
       const first=routeXY[0],last=routeXY[routeXY.length-1],from=normLabel($('from')?.value),to=normLabel($('to')?.value),pair=chooseLabelPair(first,last,routeXY,from,to);drawEndpoint(endpointPointLayer,endpointTextLayer,first,from,'start',pair[0]);drawEndpoint(endpointPointLayer,endpointTextLayer,last,to,'end',pair[1]);
       const ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.6,'stroke-dasharray':'8 8','stroke-linecap':'round','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:94,fill:'#ffc83d','opacity':.18,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:46,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':5.2}),trainShadow=svgEl('ellipse',{id:'train-cast-shadow',cx:0,cy:0,rx:54,ry:18,fill:'#031722','opacity':.46,filter:'url(#routeGlow)'}),train=svgEl('g',{id:'train-marker'}),body=svgEl('rect',{x:-38,y:-21,width:76,height:42,rx:11,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.6}),stripe=svgEl('rect',{x:-27,y:8,width:50,height:5,rx:2,fill:'#dfe8ed','opacity':.95}),window1=svgEl('rect',{x:-22,y:-10,width:13,height:12,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:4,y:-10,width:13,height:12,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M38 -18 L61 0 L38 18 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.6,'stroke-linejoin':'round'});
       addPulse(sunHalo,'r','86;108;86','2.3s');addPulse(sunHalo,'opacity','.15;.25;.15','2.3s');addPulse(sunCore,'r','43;50;43','2.3s');train.append(body,stripe,window1,window2,nose);dynamicLayer.append(ray,sunHalo,sunCore,trainShadow,train);
-      ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0)
+      ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length,routeXY,labelRects:[rectFor(pair[0],from),rectFor(pair[1],to)]};renderAnimation(0)
     };
     window.renderAnimation=function(p){
       if(!ANIM.segments.length||!ANIM.project)return;ANIM.progress=Math.max(0,Math.min(1,p));const cur=pointAtProgress(ANIM.progress);if(!cur)return;
       const x=cur.xy[0],y=cur.xy[1],angle=cur.angle*Math.PI/180,left={x:Math.sin(angle),y:-Math.cos(angle)},right={x:-Math.sin(angle),y:Math.cos(angle)};
       let sideVec=cur.s.side==='left'?left:cur.s.side==='right'?right:null;if(!sideVec){const az=(cur.s.sunAz||180)*Math.PI/180;sideVec={x:Math.sin(az),y:-Math.cos(az)}}
-      const sideRadius=186,upLift=28,rawSunX=x+sideVec.x*sideRadius,rawSunY=y+sideVec.y*sideRadius-upLift,sunX=Math.max(96,Math.min(904,rawSunX)),sunY=Math.max(60,Math.min(184,rawSunY));
+      const sun=chooseSun(x,y,sideVec,ANIM.routeXY||[],ANIM.labelRects||[]),sunX=sun.x,sunY=sun.y;
       const train=$('train-marker'),shadow=$('train-cast-shadow'),core=$('sun-core'),halo=$('sun-halo'),ray=$('sun-ray'),prog=$('route-progress');
       train?.setAttribute('transform',`translate(${x} ${y}) rotate(${cur.angle}) scale(1.36)`);core?.setAttribute('cx',sunX);core?.setAttribute('cy',sunY);halo?.setAttribute('cx',sunX);halo?.setAttribute('cy',sunY);
-      const rayEdge=56,rayStartX=sunX-sideVec.x*rayEdge,rayStartY=sunY-sideVec.y*rayEdge;ray?.setAttribute('x1',rayStartX);ray?.setAttribute('y1',rayStartY);ray?.setAttribute('x2',x);ray?.setAttribute('y2',y);
-      if(shadow){let vx=x-sunX,vy=y-sunY,len=Math.hypot(vx,vy)||1,sx=x+(vx/len)*34,sy=y+(vy/len)*24+8;shadow.setAttribute('cx',sx);shadow.setAttribute('cy',sy);shadow.setAttribute('transform',`rotate(${Math.atan2(vy,vx)*180/Math.PI} ${sx} ${sy})`)}
+      const toTrain={x:x-sunX,y:y-sunY},toLen=Math.hypot(toTrain.x,toTrain.y)||1,ux=toTrain.x/toLen,uy=toTrain.y/toLen,rayGap=66;
+      ray?.setAttribute('x1',sunX+ux*rayGap);ray?.setAttribute('y1',sunY+uy*rayGap);ray?.setAttribute('x2',x);ray?.setAttribute('y2',y);
+      if(shadow){const sx=x+ux*36,sy=y+uy*26+8;shadow.setAttribute('cx',sx);shadow.setAttribute('cy',sy);shadow.setAttribute('transform',`rotate(${Math.atan2(uy,ux)*180/Math.PI} ${sx} ${sy})`)}
       if(prog&&ANIM.total)prog.setAttribute('stroke-dashoffset',ANIM.total*(1-ANIM.progress));const color=cur.s.side==='right'?'#ffc83d':cur.s.side==='left'?'#28d7ff':'#53616a';if(ray)ray.setAttribute('stroke',color);if(halo)halo.setAttribute('fill',color);if(prog)prog.setAttribute('stroke',color);
       const label=cur.s.side==='right'?'Soleil à droite':cur.s.side==='left'?'Soleil à gauche':'Exposition latérale faible',advice=cur.s.side==='right'?'Privilégie le côté gauche à cet instant.':cur.s.side==='left'?'Privilégie le côté droit à cet instant.':'Le choix du côté change peu à cet instant.';$('animation-status').innerHTML=`<strong>${fmtMin(cur.s.midMin)} · ${label}</strong>${advice}`;
     };
