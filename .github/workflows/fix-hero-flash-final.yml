@@ -1,0 +1,46 @@
+name: Fix hero flash final
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-hero-flash-final.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-hero:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remove late hero video injection
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('inject-landing.js')
+          s = p.read_text(encoding='utf-8')
+          start = s.find('  function ensureHeroVideo(){')
+          end = s.find('  function friendlyStatus(){', start)
+          if start < 0 or end < 0:
+              raise SystemExit('ensureHeroVideo block not found')
+          replacement = "  function ensureHeroVideo(){ return; }\n\n"
+          s = s[:start] + replacement + s[end:]
+          p.write_text(s, encoding='utf-8')
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          html = html.replace('./inject-landing.js?v=202609081045', './inject-landing.js?v=202609081516')
+          index.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inject-landing.js index.html
+          git diff --cached --quiet || git commit -m "Stabilise définitivement le hero au chargement"
+          git push
