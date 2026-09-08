@@ -19,9 +19,8 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function $(id){return document.getElementById(id)}
 
   function injectSearchStyles(){
-    if(document.getElementById('number-search-overrides')) return;
-    const style=document.createElement('style');
-    style.id='number-search-overrides';
+    let style=document.getElementById('number-search-overrides');
+    if(!style){style=document.createElement('style');style.id='number-search-overrides';document.head.appendChild(style)}
     style.textContent=`
       .hero{background:#072d3c url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
       .hero-video{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;object-fit:cover!important;object-position:center 52%!important;z-index:0!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;background:url('./assets/hero-train.webp') center 52%/cover no-repeat!important}
@@ -48,7 +47,6 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       }
       @media(max-width:850px){#number-search-panel .number-row{grid-template-columns:1fr!important}.hero-video{object-position:center 52%!important}}
     `;
-    document.head.appendChild(style);
   }
 
   function injectFinalTabStyle(){
@@ -132,19 +130,35 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function friendlyStatus(){const status=$('status');if(!status)return;status.classList.add('friendly-status');if(!status.querySelector('.status-sun'))status.innerHTML='<span class="status-sun" aria-hidden="true">☀</span><span class="status-text"></span>';const text=status.querySelector('.status-text');if(text)text.textContent=STATUS_TEXT}
   function isFullDate(value){return /^\d{4}-\d{2}-\d{2}$/.test(value||'')}
   function syncNumberDateToMain(){const input=$('number-date'),mainDate=$('date');if(!input||!mainDate||!isFullDate(input.value))return false;if(mainDate.value!==input.value){mainDate.value=input.value;mainDate.dispatchEvent(new Event('change',{bubbles:true}))}return true}
-  function ensureNumberDate(){const row=document.querySelector('#number-search-panel .number-row'),button=$('number-search-btn'),mainDate=$('date');if(!row||!button||!mainDate)return null;let input=$('number-date');if(!input){const field=document.createElement('div');field.className='field number-date-field';field.innerHTML='<label>Date du départ</label><input type="date" id="number-date">';button.insertAdjacentElement('beforebegin',field);input=field.querySelector('input')}if(!input.value&&mainDate.value)input.value=mainDate.value;input.min=mainDate.min||'';input.max=mainDate.max||'';if(!input.dataset.dateHooked){input.dataset.dateHooked='true';input.addEventListener('input',()=>{clearNumberError();if(isFullDate(input.value))syncNumberDateToMain()});input.addEventListener('change',()=>{syncNumberDateToMain();clearNumberError()});input.addEventListener('blur',()=>{if(!input.value&&mainDate.value)input.value=mainDate.value});mainDate.addEventListener('change',()=>{input.min=mainDate.min||'';input.max=mainDate.max||'';if(document.activeElement!==input&&mainDate.value)input.value=mainDate.value;clearNumberError()})}return input}
+  function ensureNumberDate(){const row=document.querySelector('#number-search-panel .number-row'),button=$('number-search-btn'),mainDate=$('date');if(!row||!button||!mainDate)return null;let input=$('number-date');if(!input){const field=document.createElement('div');field.className='field number-date-field';field.innerHTML='<label>Date du départ</label><input type="date" id="number-date">';button.insertAdjacentElement('beforebegin',field);input=field.querySelector('input')}if(!input.value&&mainDate.value)input.value=mainDate.value;input.min=mainDate.min||'';input.max=mainDate.max||'';if(!input.dataset.dateHooked){input.dataset.dateHooked='true';input.addEventListener('input',()=>{clearNumberError();if(isFullDate(input.value))syncNumberDateToMain()});input.addEventListener('change',()=>{syncNumberDateToMain();clearNumberError()});input.addEventListener('blur',()=>{if(!input.value&&mainDate.value)input.value=mainDate.value});mainDate.addEventListener('change',()=>{input.min=mainDate.min||'';input.max=mainDate.max||'';if(document.activeElement!==input&&mainDate.value)input.value=mainDate.value;clearNumberError();scheduleUpcomingFilter()})}return input}
   function ensureNumberFeedback(){const panel=$('number-search-panel'),row=panel?.querySelector('.number-row');if(!panel||!row)return null;let feedback=$('number-feedback');if(!feedback){feedback=document.createElement('div');feedback.id='number-feedback';feedback.className='number-feedback';feedback.setAttribute('aria-live','polite');row.insertAdjacentElement('afterend',feedback)}return feedback}
   function clearNumberError(){const input=$('train-number'),date=$('number-date'),feedback=ensureNumberFeedback();input?.classList.remove('is-error');date?.classList.remove('is-error');if(feedback){feedback.classList.remove('show');feedback.textContent=''}}
   function setNumberError(message,{date=false}={}){const input=$('train-number'),dateInput=$('number-date'),feedback=ensureNumberFeedback();input?.classList.add('is-error');if(date)dateInput?.classList.add('is-error');if(feedback){feedback.textContent=message;feedback.classList.add('show')}}
   function parisNowParts(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).reduce((acc,p)=>(acc[p.type]=p.value,acc),{});return{date:`${parts.year}-${parts.month}-${parts.day}`,minutes:Number(parts.hour)*60+Number(parts.minute)}}
-  function optionDepartureMinutes(option){const text=option?.textContent||'',match=text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\s*→/);if(!match)return null;return Number(match[1])*60+Number(match[2])}
-  function filterUpcomingTrains(){const date=$('date')?.value,trip=$('trip'),trainbox=$('trainbox'),helper=$('helper');if(!date||!trip||!trainbox||!helper||!trip.options.length)return false;const now=parisNowParts();if(date!==now.date)return false;const before=trip.options.length;Array.from(trip.options).forEach(option=>{const dep=optionDepartureMinutes(option);if(dep!==null&&dep<now.minutes)option.remove()});if(before===trip.options.length)return false;if(!trip.options.length){trainbox.style.display='none';helper.textContent='Aucun train à venir trouvé pour aujourd’hui sur ce trajet.';setSearching(false);return true}trip.value=trip.options[0].value;helper.textContent=`${trip.options.length} train(s) à venir trouvé(s) pour aujourd’hui.`;return true}
-  function scheduleUpcomingFilter(){[0,60,120,320,700,1200,2200,4000].forEach(delay=>window.setTimeout(filterUpcomingTrains,delay))}
-  function watchTripOptions(){const trip=$('trip');if(!trip||tripObserverReady)return;tripObserverReady=true;new MutationObserver(()=>scheduleUpcomingFilter()).observe(trip,{childList:true,subtree:false});trip.addEventListener('change',()=>window.setTimeout(filterUpcomingTrains,0));scheduleUpcomingFilter()}
+  function parseTimeToMinutes(text){const m=String(text||'').match(/\b([01]?\d|2[0-3])\s*[:hH]\s*([0-5]?\d)\b/);if(!m)return null;return Number(m[1])*60+Number(m[2])}
+  function formatHourLabel(text){return String(text||'').replace(/\b([01]?\d|2[0-3])\s*[:hH]\s*([0-5]?\d)\b/g,(_,h,m)=>`${Number(h)}h${String(Number(m)).padStart(2,'0')}`)}
+  function normalizeTripLabels(){const trip=$('trip');if(!trip)return;Array.from(trip.options).forEach(option=>{const clean=formatHourLabel(option.textContent);if(option.textContent!==clean)option.textContent=clean})}
+  function filterUpcomingTrains(){
+    const date=$('date')?.value,trip=$('trip'),trainbox=$('trainbox'),helper=$('helper');
+    if(!date||!trip||!trainbox)return false;
+    normalizeTripLabels();
+    if(!trip.options.length)return false;
+    const now=parisNowParts();
+    if(date!==now.date)return false;
+    const before=trip.options.length;
+    Array.from(trip.options).forEach(option=>{const dep=parseTimeToMinutes(option.textContent);if(dep!==null&&dep<now.minutes)option.remove()});
+    if(before===trip.options.length)return false;
+    if(!trip.options.length){trainbox.style.display='none';if(helper)helper.textContent='Aucun train à venir trouvé pour aujourd’hui sur ce trajet.';setSearching(false);return true}
+    trip.value=trip.options[0].value;
+    if(helper)helper.textContent=`${trip.options.length} train(s) à venir trouvé(s) pour aujourd’hui.`;
+    return true;
+  }
+  function scheduleUpcomingFilter(){[0,40,100,180,320,600,1000,1800,3000,5000].forEach(delay=>window.setTimeout(filterUpcomingTrains,delay))}
+  function watchTripOptions(){const trip=$('trip');if(!trip||tripObserverReady)return;tripObserverReady=true;new MutationObserver(()=>scheduleUpcomingFilter()).observe(trip,{childList:true,subtree:true,characterData:true});trip.addEventListener('change',()=>window.setTimeout(()=>{normalizeTripLabels();filterUpcomingTrains()},0));scheduleUpcomingFilter()}
   function setSearching(active){const panel=document.querySelector('#planner .panel'),status=$('status');panel?.classList.toggle('is-searching',active);status?.classList.toggle('is-searching',active);friendlyStatus()}
 
   function boot(){
-    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();watchTripOptions();
+    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();watchTripOptions();scheduleUpcomingFilter();
     const plannerFoot=document.querySelector('.planner-foot');if(plannerFoot)plannerFoot.style.display='none';
     const hint=document.querySelector('#number-search-panel > .hint');if(hint)hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
     const trainInput=$('train-number');if(trainInput&&!trainInput.dataset.errorHooked){trainInput.dataset.errorHooked='true';trainInput.addEventListener('input',clearNumberError)}
@@ -153,5 +167,5 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(watchTripOptions,1800)});
+  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(watchTripOptions,1800);window.setTimeout(scheduleUpcomingFilter,2200)});
 })();
