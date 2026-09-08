@@ -1,5 +1,5 @@
 (function(){
-  const VERSION='202609081205-error-ui-v9';
+  const VERSION='202609081320-logo-original-v10';
   const NS='http://www.w3.org/2000/svg';
   const W=1000,H=430;
   let SUN_STATE={x:null,y:null};
@@ -8,6 +8,18 @@
   function svgEl(name,attrs={}){const el=document.createElementNS(NS,name);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el}
   function lerp(a,b,t){return a+(b-a)*t}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+
+  function installLogoUi(){
+    let style=document.getElementById('original-logo-header-v10');
+    if(!style){style=document.createElement('style');style.id='original-logo-header-v10';document.head.appendChild(style)}
+    style.textContent=`
+      .hero .brand{display:block!important;width:236px!important;height:82px!important;min-width:236px!important;background:url('./assets/logo-place-au-soleil.svg?v=202609081320') left center/contain no-repeat!important;font-size:0!important;line-height:0!important;letter-spacing:0!important;color:transparent!important;text-indent:-9999px!important;overflow:hidden!important;filter:drop-shadow(0 8px 22px rgba(0,0,0,.26))!important;position:relative!important;z-index:8!important;text-decoration:none!important}
+      .hero .brand,.hero .brand *{text-transform:none!important}
+      .hero .brand .brand-mark,.hero .brand>span,.hero .brand:before,.hero .brand:after,.hero .brand .brand-mark:before,.hero .brand .brand-mark:after{display:none!important;content:none!important;background:none!important;border:0!important;box-shadow:none!important}
+      @media(max-width:950px){.hero .brand{width:190px!important;height:66px!important;min-width:190px!important}}
+      @media(max-width:640px){.hero .brand{width:162px!important;height:56px!important;min-width:162px!important}}
+    `;
+  }
 
   function installNumberErrorUi(){
     let style=document.getElementById('number-error-ui-v9');
@@ -59,6 +71,7 @@
   function naturalSunTarget(x,y,cur){const az=(cur.s.sunAz||180)*Math.PI/180,alt=Math.max(0,Math.min(80,cur.s.sunAlt||0));let vx=Math.sin(az),vy=-Math.cos(az)*0.62-alt/180;const len=Math.hypot(vx,vy)||1;vx/=len;vy/=len;const radius=182-alt*.35;return{x:clamp(x+vx*radius,82,918),y:clamp(y+vy*radius-16,58,244)}}
 
   function install(){
+    installLogoUi();
     installNumberErrorUi();
     if(typeof stopAnimation!=='function'||typeof interpolate!=='function'||typeof pointAtProgress!=='function'||typeof fmtMin!=='function')return false;
     if(window.__routeShadowFixVersion===VERSION)return true;
@@ -67,5 +80,5 @@
     window.renderAnimation=function(p){if(!ANIM.segments.length||!ANIM.project)return;ANIM.progress=Math.max(0,Math.min(1,p));const cur=pointAtProgress(ANIM.progress);if(!cur)return;const x=cur.xy[0],y=cur.xy[1],target=naturalSunTarget(x,y,cur);if(SUN_STATE.x==null||SUN_STATE.y==null||ANIM.progress<.015){SUN_STATE.x=target.x;SUN_STATE.y=target.y}else{SUN_STATE.x=lerp(SUN_STATE.x,target.x,.10);SUN_STATE.y=lerp(SUN_STATE.y,target.y,.10)}const sunX=SUN_STATE.x,sunY=SUN_STATE.y;const train=$('train-marker'),shadow=$('train-cast-shadow'),core=$('sun-core'),halo=$('sun-halo'),ray=$('sun-ray'),prog=$('route-progress');train?.setAttribute('transform',`translate(${x} ${y}) rotate(${cur.angle}) scale(1.24)`);core?.setAttribute('cx',sunX);core?.setAttribute('cy',sunY);halo?.setAttribute('cx',sunX);halo?.setAttribute('cy',sunY);const vx=x-sunX,vy=y-sunY,len=Math.hypot(vx,vy)||1,ux=vx/len,uy=vy/len,rayGap=46;ray?.setAttribute('x1',sunX+ux*rayGap);ray?.setAttribute('y1',sunY+uy*rayGap);ray?.setAttribute('x2',x);ray?.setAttribute('y2',y);if(shadow){const sx=x+ux*29,sy=y+uy*21+7;shadow.setAttribute('cx',sx);shadow.setAttribute('cy',sy);shadow.setAttribute('transform',`rotate(${Math.atan2(uy,ux)*180/Math.PI} ${sx} ${sy})`)}if(prog&&ANIM.total)prog.setAttribute('stroke-dashoffset',ANIM.total*(1-ANIM.progress));const color=cur.s.side==='right'?'#ffc83d':cur.s.side==='left'?'#28d7ff':'#53616a';if(ray)ray.setAttribute('stroke',color);if(halo)halo.setAttribute('fill',color);if(prog)prog.setAttribute('stroke',color);const label=cur.s.side==='right'?'Soleil à droite':cur.s.side==='left'?'Soleil à gauche':'Exposition latérale faible',advice=cur.s.side==='right'?'Privilégie le côté gauche à cet instant.':cur.s.side==='left'?'Privilégie le côté droit à cet instant.':'Le choix du côté change peu à cet instant.';$('animation-status').innerHTML=`<strong>${fmtMin(cur.s.midMin)} · ${label}</strong>${advice}`};
     return true;
   }
-  const timer=setInterval(()=>{installNumberErrorUi();if(install()&&document.readyState==='complete')clearInterval(timer)},120);window.addEventListener('load',()=>{installNumberErrorUi();install();setTimeout(install,200);setTimeout(installNumberErrorUi,500);setTimeout(install,800);setTimeout(install,1800)});setTimeout(()=>clearInterval(timer),12000);
+  const timer=setInterval(()=>{installLogoUi();installNumberErrorUi();if(install()&&document.readyState==='complete')clearInterval(timer)},120);window.addEventListener('load',()=>{installLogoUi();installNumberErrorUi();install();setTimeout(installLogoUi,100);setTimeout(install,200);setTimeout(installNumberErrorUi,500);setTimeout(installLogoUi,650);setTimeout(install,800);setTimeout(install,1800)});setTimeout(()=>clearInterval(timer),12000);
 })();
