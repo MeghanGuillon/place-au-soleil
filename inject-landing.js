@@ -74,102 +74,6 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     video.muted=true;video.defaultMuted=true;const play=()=>video.play().catch(()=>{});video.load();play();window.setTimeout(play,300);window.setTimeout(play,1000);
   }
 
-  function cleanStationLabel(label){
-    let s=String(label||'').split(' · ')[0].trim();
-    s=s.replace(/^Gare\s+(de|d’|d')\s+/i,'').replace(/\s+TGV$/i,'').trim();
-    const known=['Paris','Marseille','Lyon','Bordeaux','Lille','Nantes','Rennes','Strasbourg','Toulouse','Nice','Montpellier','Avignon','Valence','Dijon','Grenoble','Rouen','Le Mans','Tours','Vierzon','Nancy','Metz'];
-    const found=known.find(k=>s.toLocaleLowerCase('fr').startsWith(k.toLocaleLowerCase('fr')));
-    return found||s;
-  }
-
-  function endpointTextAnchor(x){return x>760?'end':x<240?'start':'middle'}
-  function drawEndpointLabel(svg,x,y,city,type){
-    if(typeof svgEl!=='function')return;
-    const start=type==='start';
-    const anchor=endpointTextAnchor(x);
-    const dx=anchor==='end'?-22:anchor==='start'?22:0;
-    const nearTop=y<150;
-    const smallY=nearTop?y+62:Math.max(34,y-92);
-    const bigY=nearTop?y+90:Math.max(60,y-62);
-    const g=svgEl('g',{class:`endpoint-label endpoint-${type}`});
-    const dot=svgEl('circle',{cx:x,cy:y,r:8.5,fill:start?'#ffc83d':'#fff',stroke:'#101820','stroke-width':3});
-    const stem=svgEl('line',{x1:x,y1:y+(nearTop?14:-14),x2:x+dx*.45,y2:bigY+(nearTop?-22:12),stroke:'rgba(255,255,255,.34)','stroke-width':1.4,'stroke-dasharray':'3 5'});
-    const small=svgEl('text',{class:'endpoint-small',x:x+dx,y:smallY,fill:'#ffc83d','font-size':15,'font-weight':800,'text-anchor':anchor});
-    small.textContent=start?'Départ':'Arrivée';
-    const big=svgEl('text',{class:'endpoint-city',x:x+dx,y:bigY,fill:'#fff','font-size':28,'font-weight':800,'text-anchor':anchor});
-    big.textContent=city || (start?'Départ':'Arrivée');
-    g.append(stem,dot,small,big);svg.appendChild(g);
-  }
-
-  function routeProjector(pts){
-    let minA=Math.min(...pts.map(p=>p.lat)),maxA=Math.max(...pts.map(p=>p.lat)),minO=Math.min(...pts.map(p=>p.lon)),maxO=Math.max(...pts.map(p=>p.lon));
-    let padX=76,padY=92,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
-    return p=>[500+(p.lon-cx)*scale,215-(p.lat-cy)*scale];
-  }
-
-  function addPulse(el,attr,values,dur){
-    if(typeof svgEl!=='function'||!el)return;
-    const a=svgEl('animate',{attributeName:attr,values,dur,repeatCount:'indefinite',calcMode:'spline',keyTimes:'0;0.5;1',keySplines:'.3 0 .25 1;.3 0 .25 1'});
-    el.appendChild(a);
-  }
-
-  function installRouteAnimation(){
-    if(typeof drawAnimated!=='function' || typeof svgEl!=='function' || typeof stopAnimation!=='function' || typeof renderAnimation!=='function')return false;
-    if(window.__routeAnimationOverrideVersion==='202609081120')return true;
-    window.__routeAnimationOverrideVersion='202609081120';
-    drawAnimated=function(segs){
-      stopAnimation();
-      let svg=$('route-svg'),pts=segs.flatMap(s=>[s.start,s.end]);
-      svg.innerHTML='';
-      if(pts.length<2)return;
-      let pr=routeProjector(pts);
-      let defs=svgEl('defs'),glow=svgEl('filter',{id:'routeGlow',x:'-50%',y:'-50%',width:'200%',height:'200%'}),blur=svgEl('feGaussianBlur',{stdDeviation:'7',result:'b'});glow.appendChild(blur);
-      let sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'22'});sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
-      let pathParts=[];segs.forEach((s,i)=>{let a=pr(s.start),b=pr(s.end);if(!i)pathParts.push(`M${a[0]},${a[1]}`);pathParts.push(`L${b[0]},${b[1]}`)});
-      let d=pathParts.join(' '),under=svgEl('path',{d,fill:'none',stroke:'#ffffff24','stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round'}),base=svgEl('path',{d,fill:'none',stroke:'#91a0ab','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}),progress=svgEl('path',{id:'route-progress',d,fill:'none',stroke:'#ffc83d','stroke-width':6.4,'stroke-linecap':'round','stroke-linejoin':'round',filter:'url(#routeGlow)'});svg.append(under,base,progress);
-      let length=progress.getTotalLength();progress.setAttribute('stroke-dasharray',length);progress.setAttribute('stroke-dashoffset',length);
-      let first=pr(segs[0].start),last=pr(segs[segs.length-1].end),from=cleanStationLabel($('from')?.value),to=cleanStationLabel($('to')?.value);
-      drawEndpointLabel(svg,first[0],first[1],from,'start');
-      drawEndpointLabel(svg,last[0],last[1],to,'end');
-      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.4,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:68,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:30,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.5}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:17,rx:32,ry:9,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-27,y:-15,width:54,height:30,rx:9,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2}),stripe=svgEl('rect',{x:-22,y:6,width:41,height:4.5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-16,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M27 -12 L43 0 L27 12 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2,'stroke-linejoin':'round'});
-      addPulse(sunHalo,'r','58;76;58','2.4s');addPulse(sunHalo,'opacity','.16;.26;.16','2.4s');addPulse(sunCore,'r','28;33;28','2.4s');
-      train.append(shadow,body,stripe,window1,window2,nose);svg.append(ray,sunHalo,sunCore,train);
-      ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0);
-    };
-    installAnimationRenderPolish(true);
-    return true;
-  }
-
-  function installAnimationRenderPolish(force=false){
-    if(typeof renderAnimation!=='function')return false;
-    if(window.__routeAnimationRenderPolishVersion==='202609081120'&&!force)return true;
-    if(!window.__placeAuSoleilOriginalRenderAnimation)window.__placeAuSoleilOriginalRenderAnimation=renderAnimation;
-    window.__routeAnimationRenderPolishVersion='202609081120';
-    const original=window.__placeAuSoleilOriginalRenderAnimation;
-    renderAnimation=function(p){
-      original(p);
-      const train=$('train-marker'), core=$('sun-core'), halo=$('sun-halo'), ray=$('sun-ray');
-      if(train){
-        const current=train.getAttribute('transform')||'';
-        if(current && !current.includes('scale('))train.setAttribute('transform',current+' scale(1.15)');
-        const match=current.match(/translate\(([-0-9.]+)[ ,]([-0-9.]+)\)/);
-        if(match && core && halo && ray){
-          const tx=Number(match[1]), ty=Number(match[2]);
-          const sx=Number(core.getAttribute('cx')), sy=Number(core.getAttribute('cy'));
-          let vx=sx-tx, vy=sy-ty, len=Math.hypot(vx,vy)||1;
-          const target=Math.max(230,Math.min(300,len*1.55));
-          let nx=tx+(vx/len)*target, ny=ty+(vy/len)*target;
-          nx=Math.max(76,Math.min(924,nx));
-          ny=Math.max(54,Math.min(186,ny));
-          core.setAttribute('cx',nx);core.setAttribute('cy',ny);
-          halo.setAttribute('cx',nx);halo.setAttribute('cy',ny);
-          ray.setAttribute('x1',nx);ray.setAttribute('y1',ny+34);
-        }
-      }
-    };
-    return true;
-  }
-
   function friendlyStatus(){const status=$('status');if(!status)return;status.classList.add('friendly-status');if(!status.querySelector('.status-sun'))status.innerHTML='<span class="status-sun" aria-hidden="true">☀</span><span class="status-text"></span>';const text=status.querySelector('.status-text');if(text)text.textContent=STATUS_TEXT}
   function isFullDate(value){return /^\d{4}-\d{2}-\d{2}$/.test(value||'')}
   function syncNumberDateToMain(){const input=$('number-date'),mainDate=$('date');if(!input||!mainDate||!isFullDate(input.value))return false;if(mainDate.value!==input.value){mainDate.value=input.value;mainDate.dispatchEvent(new Event('change',{bubbles:true}))}return true}
@@ -201,7 +105,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function setSearching(active){const panel=document.querySelector('#planner .panel'),status=$('status');panel?.classList.toggle('is-searching',active);status?.classList.toggle('is-searching',active);friendlyStatus()}
 
   function boot(){
-    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();installRouteAnimation();installAnimationRenderPolish();watchTripOptions();scheduleUpcomingFilter();
+    injectSearchStyles();ensureHeroVideo();injectFinalTabStyle();friendlyStatus();ensureNumberDate();ensureNumberFeedback();watchTripOptions();scheduleUpcomingFilter();
     const plannerFoot=document.querySelector('.planner-foot');if(plannerFoot)plannerFoot.style.display='none';
     const hint=document.querySelector('#number-search-panel > .hint');if(hint)hint.textContent='Entre le numéro indiqué sur ton billet, puis vérifie la date de départ pour retrouver le bon trajet.';
     const trainInput=$('train-number');if(trainInput&&!trainInput.dataset.errorHooked){trainInput.dataset.errorHooked='true';trainInput.addEventListener('input',clearNumberError)}
@@ -210,7 +114,121 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(installRouteAnimation,1800);window.setTimeout(installAnimationRenderPolish,1800);window.setTimeout(watchTripOptions,1800);window.setTimeout(scheduleUpcomingFilter,2200)});
-  const late=setInterval(()=>{const ok=installRouteAnimation()&&installAnimationRenderPolish();if(ok&&document.readyState==='complete')clearInterval(late)},500);
-  window.setTimeout(()=>clearInterval(late),10000);
+  window.addEventListener('load',()=>{boot();window.setTimeout(boot,400);window.setTimeout(boot,1200);window.setTimeout(watchTripOptions,1800);window.setTimeout(scheduleUpcomingFilter,2200)});
+})();
+
+(function(){
+  const VERSION='202609081235';
+  function $(id){return document.getElementById(id)}
+  function normalizeLabel(label){
+    let s=String(label||'').split(' · ')[0].trim();
+    s=s.replace(/^Gare\s+(de|d’|d')\s+/i,'').replace(/\s+TGV$/i,'').trim();
+    const known=['Paris','Marseille','Lyon','Bordeaux','Lille','Nantes','Rennes','Strasbourg','Toulouse','Nice','Montpellier','Avignon','Valence','Dijon','Grenoble','Rouen','Le Mans','Tours','Vierzon','Nancy','Metz'];
+    return known.find(k=>s.toLocaleLowerCase('fr').startsWith(k.toLocaleLowerCase('fr')))||s;
+  }
+  function distPointSeg(px,py,ax,ay,bx,by){
+    const vx=bx-ax,vy=by-ay,wx=px-ax,wy=py-ay,c1=vx*wx+vy*wy,c2=vx*vx+vy*vy;
+    const t=c2?Math.max(0,Math.min(1,c1/c2)):0,x=ax+t*vx,y=ay+t*vy;
+    return Math.hypot(px-x,py-y);
+  }
+  function pickLabelPosition(x,y,routeXY,city){
+    const w=Math.min(270,Math.max(110,String(city||'').length*15));
+    const options=[
+      {dx:0,dy:-108,anchor:'middle'},
+      {dx:x<500?36:-36,dy:-104,anchor:x<500?'start':'end'},
+      {dx:x<500?70:-70,dy:-78,anchor:x<500?'start':'end'},
+      {dx:0,dy:104,anchor:'middle'},
+      {dx:x<500?44:-44,dy:88,anchor:x<500?'start':'end'}
+    ];
+    let best=options[0],bestScore=-Infinity;
+    for(const o of options){
+      const tx=x+o.dx,ty=y+o.dy,half=o.anchor==='middle'?w/2:o.anchor==='end'?w:0;
+      let score=0;
+      if(tx-half<34)score-=900+(34-(tx-half))*8;
+      if(tx-half+w>966)score-=900+(tx-half+w-966)*8;
+      if(ty<54)score-=900+(54-ty)*8;
+      if(ty>382)score-=900+(ty-382)*8;
+      let minD=999;
+      for(let i=0;i<routeXY.length-1;i++){
+        const a=routeXY[i],b=routeXY[i+1];
+        minD=Math.min(minD,distPointSeg(tx,ty,a[0],a[1],b[0],b[1]));
+      }
+      score+=minD*6;
+      score+=o.dy<0?80:0;
+      if(score>bestScore){bestScore=score;best=o;}
+    }
+    return best;
+  }
+  function addPulse(el,attr,values,dur){
+    if(!el || typeof svgEl!=='function')return;
+    const a=svgEl('animate',{attributeName:attr,values,dur,repeatCount:'indefinite',calcMode:'spline',keyTimes:'0;0.5;1',keySplines:'.3 0 .25 1;.3 0 .25 1'});
+    el.appendChild(a);
+  }
+  function drawSmartEndpoint(svg,x,y,city,type,routeXY){
+    const start=type==='start',pos=pickLabelPosition(x,y,routeXY,city),tx=x+pos.dx,cityY=y+pos.dy,labelY=cityY-26;
+    const g=svgEl('g',{class:`endpoint-label endpoint-${type}`});
+    const stem=svgEl('line',{x1:x,y1:y,x2:tx,y2:cityY-10,stroke:'rgba(255,255,255,.28)','stroke-width':1.4,'stroke-dasharray':'3 5'});
+    const dot=svgEl('circle',{cx:x,cy:y,r:9,fill:start?'#ffc83d':'#fff',stroke:'#101820','stroke-width':3.2});
+    const small=svgEl('text',{class:'endpoint-small',x:tx,y:labelY,fill:'#ffc83d','font-size':15,'font-weight':800,'text-anchor':pos.anchor});
+    small.textContent=start?'Départ':'Arrivée';
+    const big=svgEl('text',{class:'endpoint-city',x:tx,y:cityY,fill:'#fff','font-size':29,'font-weight':800,'text-anchor':pos.anchor});
+    big.textContent=city || (start?'Départ':'Arrivée');
+    g.append(stem,dot,small,big);svg.appendChild(g);
+  }
+  function routeProjector(pts){
+    const minA=Math.min(...pts.map(p=>p.lat)),maxA=Math.max(...pts.map(p=>p.lat)),minO=Math.min(...pts.map(p=>p.lon)),maxO=Math.max(...pts.map(p=>p.lon));
+    const padX=84,padY=98,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
+    return p=>[500+(p.lon-cx)*scale,215-(p.lat-cy)*scale];
+  }
+  function install(){
+    if(typeof svgEl!=='function'||typeof stopAnimation!=='function'||typeof interpolate!=='function'||typeof pointAtProgress!=='function'||typeof fmtMin!=='function')return false;
+    if(window.__routeAnimationFinalVersion===VERSION)return true;
+    window.__routeAnimationFinalVersion=VERSION;
+    drawAnimated=function(segs){
+      stopAnimation();
+      const svg=$('route-svg'),pts=segs.flatMap(s=>[s.start,s.end]);
+      svg.innerHTML='';
+      if(pts.length<2)return;
+      const pr=routeProjector(pts);
+      const defs=svgEl('defs'),glow=svgEl('filter',{id:'routeGlow',x:'-50%',y:'-50%',width:'200%',height:'200%'}),blur=svgEl('feGaussianBlur',{stdDeviation:'7',result:'b'});
+      glow.appendChild(blur);
+      const sunGlow=svgEl('filter',{id:'sunGlow',x:'-150%',y:'-150%',width:'400%',height:'400%'}),sunBlur=svgEl('feGaussianBlur',{stdDeviation:'24'});
+      sunGlow.appendChild(sunBlur);defs.append(glow,sunGlow);svg.appendChild(defs);
+      const routeXY=[];let pathParts=[];
+      segs.forEach((s,i)=>{const a=pr(s.start),b=pr(s.end);if(!i){pathParts.push(`M${a[0]},${a[1]}`);routeXY.push(a)}pathParts.push(`L${b[0]},${b[1]}`);routeXY.push(b)});
+      const d=pathParts.join(' '),under=svgEl('path',{d,fill:'none',stroke:'#ffffff24','stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round'}),base=svgEl('path',{d,fill:'none',stroke:'#91a0ab','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}),progress=svgEl('path',{id:'route-progress',d,fill:'none',stroke:'#ffc83d','stroke-width':6.6,'stroke-linecap':'round','stroke-linejoin':'round',filter:'url(#routeGlow)'});
+      svg.append(under,base,progress);
+      const length=progress.getTotalLength();progress.setAttribute('stroke-dasharray',length);progress.setAttribute('stroke-dashoffset',length);
+      const first=pr(segs[0].start),last=pr(segs[segs.length-1].end);
+      drawSmartEndpoint(svg,first[0],first[1],normalizeLabel($('from')?.value),'start',routeXY);
+      drawSmartEndpoint(svg,last[0],last[1],normalizeLabel($('to')?.value),'end',routeXY);
+      const ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.5,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:74,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:34,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.8}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:18,rx:35,ry:10,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-30,y:-17,width:60,height:34,rx:10,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.4}),stripe=svgEl('rect',{x:-25,y:7,width:46,height:5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-18,y:-8,width:11,height:10,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:1,y:-8,width:11,height:10,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M30 -14 L48 0 L30 14 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.4,'stroke-linejoin':'round'});
+      addPulse(sunHalo,'r','66;84;66','2.4s');addPulse(sunHalo,'opacity','.16;.27;.16','2.4s');addPulse(sunCore,'r','32;38;32','2.4s');
+      train.append(shadow,body,stripe,window1,window2,nose);svg.append(ray,sunHalo,sunCore,train);
+      ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0);
+    };
+    renderAnimation=function(p){
+      if(!ANIM.segments.length||!ANIM.project)return;
+      ANIM.progress=Math.max(0,Math.min(1,p));
+      const cur=pointAtProgress(ANIM.progress);if(!cur)return;
+      const x=cur.xy[0],y=cur.xy[1],az=(cur.s.sunAz||180)*Math.PI/180,alt=Math.max(0,Math.min(80,cur.s.sunAlt||0));
+      const radius=255-alt*.85;
+      const sunX=Math.max(80,Math.min(920,x+Math.sin(az)*radius));
+      const sunY=Math.max(56,Math.min(186,y-Math.cos(az)*radius*.40-alt*.52));
+      const train=$('train-marker'),core=$('sun-core'),halo=$('sun-halo'),ray=$('sun-ray'),prog=$('route-progress');
+      train?.setAttribute('transform',`translate(${x} ${y}) rotate(${cur.angle}) scale(1.18)`);
+      core?.setAttribute('cx',sunX);core?.setAttribute('cy',sunY);halo?.setAttribute('cx',sunX);halo?.setAttribute('cy',sunY);
+      ray?.setAttribute('x1',sunX);ray?.setAttribute('y1',sunY+38);ray?.setAttribute('x2',x);ray?.setAttribute('y2',y);
+      if(prog&&ANIM.total)prog.setAttribute('stroke-dashoffset',ANIM.total*(1-ANIM.progress));
+      const color=cur.s.side==='right'?'#ffc83d':cur.s.side==='left'?'#28d7ff':'#53616a';
+      if(ray)ray.setAttribute('stroke',color);if(halo)halo.setAttribute('fill',color);if(prog)prog.setAttribute('stroke',color);
+      const label=cur.s.side==='right'?'Soleil à droite':cur.s.side==='left'?'Soleil à gauche':'Exposition latérale faible';
+      const advice=cur.s.side==='right'?'Privilégie le côté gauche à cet instant.':cur.s.side==='left'?'Privilégie le côté droit à cet instant.':'Le choix du côté change peu à cet instant.';
+      $('animation-status').innerHTML=`<strong>${fmtMin(cur.s.midMin)} · ${label}</strong>${advice}`;
+    };
+    return true;
+  }
+  const timer=setInterval(()=>{if(install()&&document.readyState==='complete')clearInterval(timer)},250);
+  window.addEventListener('load',()=>{install();setTimeout(install,300);setTimeout(install,1200);});
+  setTimeout(()=>clearInterval(timer),12000);
 })();
