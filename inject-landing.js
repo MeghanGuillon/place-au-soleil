@@ -85,11 +85,11 @@ fetch('./landing-blocks.html',{cache:'no-store'})
   function drawEndpointLabel(svg,x,y,city,type){
     if(typeof svgEl!=='function')return;
     const start=type==='start';
-    const anchor=x>760?'end':'start';
-    const dx=anchor==='end'?-18:18;
-    const putBelow=y<95;
-    const smallY=putBelow?y+38:y-44;
-    const bigY=putBelow?y+64:y-18;
+    const anchor=x>760?'end':x<220?'start':'middle';
+    const dx=anchor==='end'?-18:anchor==='start'?18:0;
+    const putBelow=y<118;
+    const smallY=putBelow?y+46:Math.max(32,y-70);
+    const bigY=putBelow?y+73:Math.max(56,y-42);
     const g=svgEl('g',{class:`endpoint-label endpoint-${type}`});
     const dot=svgEl('circle',{cx:x,cy:y,r:8.5,fill:start?'#ffc83d':'#fff',stroke:'#101820','stroke-width':3});
     const small=svgEl('text',{class:'endpoint-small',x:x+dx,y:smallY,fill:'#ffc83d','font-size':15,'font-weight':800,'text-anchor':anchor});
@@ -101,7 +101,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
 
   function routeProjector(pts){
     let minA=Math.min(...pts.map(p=>p.lat)),maxA=Math.max(...pts.map(p=>p.lat)),minO=Math.min(...pts.map(p=>p.lon)),maxO=Math.max(...pts.map(p=>p.lon));
-    let padX=72,padY=70,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
+    let padX=72,padY=78,dx=Math.max(.001,maxO-minO),dy=Math.max(.001,maxA-minA),scale=Math.min((1000-padX*2)/dx,(430-padY*2)/dy),cx=(minO+maxO)/2,cy=(minA+maxA)/2;
     return p=>[500+(p.lon-cx)*scale,215-(p.lat-cy)*scale];
   }
 
@@ -129,7 +129,7 @@ fetch('./landing-blocks.html',{cache:'no-store'})
       let first=pr(segs[0].start),last=pr(segs[segs.length-1].end),from=cleanStationLabel($('from')?.value),to=cleanStationLabel($('to')?.value);
       drawEndpointLabel(svg,first[0],first[1],from,'start');
       drawEndpointLabel(svg,last[0],last[1],to,'end');
-      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.4,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:64,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:29,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.5}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:17,rx:32,ry:9,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-27,y:-15,width:54,height:30,rx:9,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2}),stripe=svgEl('rect',{x:-22,y:6,width:41,height:4.5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-16,y:-7,width:10,width:10,height:9,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M27 -12 L43 0 L27 12 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2,'stroke-linejoin':'round'});
+      let ray=svgEl('line',{id:'sun-ray',stroke:'#ffc83d','stroke-width':3.4,'stroke-dasharray':'8 8','opacity':.72}),sunHalo=svgEl('circle',{id:'sun-halo',r:64,fill:'#ffc83d','opacity':.2,filter:'url(#sunGlow)'}),sunCore=svgEl('circle',{id:'sun-core',r:29,fill:'#ffc83d',stroke:'#fff3c4','stroke-width':4.5}),train=svgEl('g',{id:'train-marker'}),shadow=svgEl('ellipse',{cx:0,cy:17,rx:32,ry:9,fill:'#000','opacity':.28}),body=svgEl('rect',{x:-27,y:-15,width:54,height:30,rx:9,fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2}),stripe=svgEl('rect',{x:-22,y:6,width:41,height:4.5,rx:2,fill:'#ffc83d'}),window1=svgEl('rect',{x:-16,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),window2=svgEl('rect',{x:0,y:-7,width:10,height:9,rx:2,fill:'#58707f'}),nose=svgEl('path',{d:'M27 -12 L43 0 L27 12 Z',fill:'#f5f7f8',stroke:'#101820','stroke-width':3.2,'stroke-linejoin':'round'});
       addPulse(sunHalo,'r','58;72;58','2.4s');addPulse(sunHalo,'opacity','.16;.25;.16','2.4s');addPulse(sunCore,'r','27;32;27','2.4s');
       train.append(shadow,body,stripe,window1,window2,nose);svg.append(ray,sunHalo,sunCore,train);ANIM={...ANIM,segments:segs,project:pr,frame:null,playing:false,progress:0,start:0,total:length};renderAnimation(0);
     };
@@ -142,10 +142,23 @@ fetch('./landing-blocks.html',{cache:'no-store'})
     const original=renderAnimation;
     renderAnimation=function(p){
       original(p);
-      const train=$('train-marker');
+      const train=$('train-marker'), core=$('sun-core'), halo=$('sun-halo'), ray=$('sun-ray');
       if(train){
         const current=train.getAttribute('transform')||'';
-        if(current && !current.includes('scale('))train.setAttribute('transform',current+' scale(1.12)');
+        if(current && !current.includes('scale('))train.setAttribute('transform',current+' scale(1.15)');
+        const match=current.match(/translate\(([-0-9.]+)[ ,]([-0-9.]+)\)/);
+        if(match && core && halo && ray){
+          const tx=Number(match[1]), ty=Number(match[2]);
+          const sx=Number(core.getAttribute('cx')), sy=Number(core.getAttribute('cy'));
+          let vx=sx-tx, vy=sy-ty, len=Math.hypot(vx,vy)||1;
+          const target=Math.max(205,Math.min(260,len*1.36));
+          let nx=tx+(vx/len)*target, ny=ty+(vy/len)*target;
+          nx=Math.max(72,Math.min(928,nx));
+          ny=Math.max(56,Math.min(186,ny));
+          core.setAttribute('cx',nx);core.setAttribute('cy',ny);
+          halo.setAttribute('cx',nx);halo.setAttribute('cy',ny);
+          ray.setAttribute('x1',nx);ray.setAttribute('y1',ny+32);
+        }
       }
     };
   }
