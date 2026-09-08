@@ -1,0 +1,36 @@
+name: Apply original PNG logo
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tmp/logo.part1'
+      - 'tmp/logo.part2'
+      - 'tmp/logo.part3'
+      - 'tmp/logo.part4'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply-logo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild exact uploaded PNG and update references
+        shell: bash
+        run: |
+          cat tmp/logo.part1 tmp/logo.part2 tmp/logo.part3 tmp/logo.part4 | base64 -d > assets/logo-place-au-soleil-header.png
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          import re
+          s=re.sub(r'logo-place-au-soleil-header\.png\?v=[0-9]+','logo-place-au-soleil-header.png?v=202609081555',s)
+          p.write_text(s)
+          PY
+      - name: Commit exact PNG
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/logo-place-au-soleil-header.png index.html
+          git commit -m 'Remplace le logo par le PNG original fourni' || true
+          git push
