@@ -1,17 +1,13 @@
 {
-  "generated_at": "2026-09-12T07:43:12.723331+00:00",
+  "generated_at": "2026-09-13T08:01:57.273219+00:00",
   "source": "SNCF Open Data — Licence Ouverte Etalab 2.0",
   "calendar_sources": [
     "calendar_dates.txt"
   ],
   "dates": [
     {
-      "date": "2026-09-11",
-      "count": 11129
-    },
-    {
       "date": "2026-09-12",
-      "count": 6539
+      "count": 6459
     },
     {
       "date": "2026-09-13",
@@ -179,11 +175,11 @@
     },
     {
       "date": "2026-10-24",
-      "count": 6439
+      "count": 6441
     },
     {
       "date": "2026-10-25",
-      "count": 5635
+      "count": 5637
     },
     {
       "date": "2026-10-26",
@@ -207,11 +203,11 @@
     },
     {
       "date": "2026-10-31",
-      "count": 6457
+      "count": 6461
     },
     {
       "date": "2026-11-01",
-      "count": 5651
+      "count": 5653
     },
     {
       "date": "2026-11-02",
