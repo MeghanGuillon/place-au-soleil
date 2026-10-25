@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-10-18T06:57:43.037853+00:00",
+  "generated_at": "2026-10-25T07:16:02.055092+00:00",
   "source": "SNCF Réseau — formes des lignes du RFN",
-  "pairs_total": 5679,
-  "pairs_routed": 4924,
-  "pairs_skipped": 509,
-  "pairs_failed": 246,
+  "pairs_total": 5691,
+  "pairs_routed": 4936,
+  "pairs_skipped": 506,
+  "pairs_failed": 249,
   "bridge_max_m": 120,
   "shards": [
     "0",
